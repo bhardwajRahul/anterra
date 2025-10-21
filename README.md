@@ -1,12 +1,12 @@
 # Anterra
 
-Infrastructure as Code (IaC) repository for managing and provisioning infrastructure using Ansible and Terraform.
+Infrastructure as Code (IaC) repository for managing and provisioning infrastructure using Ansible and OpenTofu.
 
 ## Overview
 
 Anterra provides a centralized platform for:
 - Configuration management and automation via Ansible
-- Infrastructure provisioning for Cloudflare and Portainer via Terraform
+- Infrastructure provisioning for Cloudflare and Portainer via OpenTofu
 - Secure secrets management using Ansible Vault
 
 ## Project Structure
@@ -22,17 +22,23 @@ anterra/
 │   ├── playbooks/                        # Ansible playbooks
 │   └── vault/                            # Ansible vault configuration
 │       └── .vault_password               # Vault password file (gitignored)
-└── terraform/                            # Terraform infrastructure as code
+└── opentofu/                             # OpenTofu infrastructure as code
     ├── cloudflare/                       # Cloudflare infrastructure
     └── portainer/                        # Portainer container orchestration
 ```
 
 ## Prerequisites
 
-- Ansible (for configuration management)
-- Terraform (for infrastructure provisioning)
-- Git (for version control)
-- Access credentials for target infrastructure
+The following dependencies are required for this setup:
+
+- **git** - Version control
+- **tree** - Directory structure visualization
+- **btop** - System resource monitoring
+- **npm** - Node package manager (used for installing Claude Code)
+- **pipx** - Python application installer (for installing Ansible in isolated environments)
+- **ansible** - Configuration management (installed via pipx without sudo)
+- **opentofu** - Infrastructure provisioning (open-source Terraform alternative)
+- Access credentials for target infrastructure (Cloudflare, Portainer, etc.)
 
 ## Getting Started
 
@@ -50,22 +56,22 @@ cd ansible
 ansible-playbook -i inventory/hosts.yaml playbooks/<playbook-name>.yaml
 ```
 
-### Terraform Configuration
+### OpenTofu Configuration
 
 #### Cloudflare
 ```bash
-cd terraform/cloudflare
-terraform init
-terraform plan
-terraform apply
+cd opentofu/cloudflare
+tofu init
+tofu plan
+tofu apply
 ```
 
 #### Portainer
 ```bash
-cd terraform/portainer
-terraform init
-terraform plan
-terraform apply
+cd opentofu/portainer
+tofu init
+tofu plan
+tofu apply
 ```
 
 ## Security
@@ -77,7 +83,7 @@ terraform apply
 ## Contributing
 
 1. Create feature branches for new infrastructure configurations
-2. Test playbooks and Terraform plans before applying
+2. Test playbooks and OpenTofu plans before applying
 3. Document any new infrastructure components
 4. Ensure secrets are properly encrypted before committing
 
