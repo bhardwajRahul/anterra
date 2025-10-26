@@ -1,0 +1,6 @@
+---
+all:
+  hosts:
+    rpi:
+      ansible_connection: local
+...

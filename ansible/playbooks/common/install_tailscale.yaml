@@ -1,0 +1,139 @@
+---
+- name: Install and Configure Tailscale
+  hosts: rpi
+  become: true
+  gather_facts: true
+
+  vars:
+    automatically_update: true
+    enable_subnet_router: true
+    enable_exit_node: true
+    # tailscale_auth_key should be defined in vault as a secure auth key
+    # Generate one at: https://login.tailscale.com/admin/settings/keys
+
+  tasks:
+    - name: Check if Tailscale is already installed
+      command: which tailscale
+      register: tailscale_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install Tailscale from official installer script
+      shell: curl -fsSL https://tailscale.com/install.sh | sh
+      when: tailscale_check.rc != 0
+      register: tailscale_install
+      changed_when: "'installed' in tailscale_install.stdout or 'upgrade' in tailscale_install.stdout.lower()"
+
+    - name: Build tailscale up command with appropriate flags
+      set_fact:
+        tailscale_up_cmd: "tailscale up --reset{% if enable_subnet_router %} --accept-routes{% endif %}{% if enable_subnet_router and tailscale_subnet_routes is defined and tailscale_subnet_routes | length > 0 %} --advertise-routes={{ tailscale_subnet_routes }}{% endif %}{% if enable_exit_node %} --advertise-exit-node{% endif %}{% if tailscale_auth_key is defined %} --auth-key={{ tailscale_auth_key }}{% endif %}"
+
+    - name: Configure Tailscale with initial setup (authenticate, exit node, subnet routes)
+      shell: "{{ tailscale_up_cmd }}"
+      when: tailscale_auth_key is defined
+      register: tailscale_up_result
+      changed_when: true
+
+    - name: Optimize UDP GRO forwarding for better exit node and subnet router performance
+      block:
+        - name: Create networkd-dispatcher directory
+          file:
+            path: /etc/networkd-dispatcher/routable.d
+            state: directory
+            mode: '0755'
+
+        - name: Create ethtool configuration script for UDP GRO forwarding
+          shell: |
+            printf '#!/bin/sh\n\nethtool -K %s rx-udp-gro-forwarding on rx-gro-list off \n' \
+              "$(ip -o route get 8.8.8.8 | cut -f 5 -d " ")" | \
+              tee /etc/networkd-dispatcher/routable.d/50-tailscale
+          register: ethtool_script_result
+          changed_when: true
+
+        - name: Set executable permissions on ethtool script
+          file:
+            path: /etc/networkd-dispatcher/routable.d/50-tailscale
+            mode: '0755'
+
+        - name: Apply UDP GRO forwarding settings immediately
+          shell: /etc/networkd-dispatcher/routable.d/50-tailscale
+          register: ethtool_apply_result
+          changed_when: true
+
+    - name: Enable Tailscale automatic updates
+      shell: tailscale set --auto-update
+      when: automatically_update | bool
+      register: auto_update_result
+      changed_when: "'auto-update' in auto_update_result.stdout.lower()"
+
+    - name: Disable Tailscale automatic updates
+      shell: tailscale set --auto-update=false
+      when: not (automatically_update | bool)
+      register: auto_update_disable_result
+      changed_when: "'auto-update' in auto_update_disable_result.stdout.lower()"
+
+    - name: Enable IP forwarding for subnet router (IPv4)
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        state: present
+        sysctl_set: true
+      when: enable_subnet_router | bool
+
+    - name: Enable IP forwarding for subnet router (IPv6)
+      sysctl:
+        name: net.ipv6.conf.all.forwarding
+        value: '1'
+        state: present
+        sysctl_set: true
+      when: enable_subnet_router | bool
+
+    - name: Display Tailscale configuration summary
+      debug:
+        msg: |
+          TAILSCALE CONFIGURATION SUMMARY
+
+          Automatic Updates: {{ 'ENABLED' if automatically_update | bool else 'DISABLED' }}
+          Subnet Router: {{ 'ENABLED' if enable_subnet_router | bool else 'DISABLED' }}
+          {% if enable_subnet_router | bool and tailscale_subnet_routes is defined %}
+          Advertised Routes: {{ tailscale_subnet_routes }}
+          {% elif enable_subnet_router | bool %}
+          Advertised Routes: None configured (set tailscale_subnet_routes in vault)
+          {% endif %}
+          Exit Node: {{ 'ENABLED' if enable_exit_node | bool else 'DISABLED' }}
+
+    - name: Display next steps message
+      debug:
+        msg: |
+          IMPORTANT: Next Steps Required
+
+          1. NETWORK CONNECTIVITY NOTE
+             If running this playbook locally on the device, you may experience a temporary
+             network disconnection as Tailscale modifies the network configuration. This is
+             normal and the connection will be restored once Tailscale finishes initialization.
+
+          2. APPROVE ROUTES AND EXIT NODE IN TAILSCALE CONSOLE
+             Subnet routes and exit node features require manual approval in the Tailscale admin console:
+
+             a) Visit: https://login.tailscale.com/admin/machines
+             b) Find your device ({{ inventory_hostname }})
+             c) Click the device to open its details
+             d) Go to "Route settings"
+             e) Review and approve the advertised subnet routes
+             f) Review and approve the exit node setting
+
+             Without this approval, subnet routing and exit node features will not function.
+
+          3. DISABLE KEY EXPIRY (RECOMMENDED FOR HEADLESS DEVICES)
+             For unattended devices (servers, Raspberry Pi, etc.), it is recommended to disable
+             key expiry to prevent authentication failures:
+
+             a) In the Tailscale admin console, go to your device settings
+             b) Toggle OFF the "Key expiry" setting
+             c) This allows the device to maintain connection without re-authentication
+
+          4. CONFIGURATION CHANGES
+             To modify any settings, edit the vault secrets and re-run this playbook:
+
+             ansible-vault edit inventory/group_vars/all/secrets.yaml
+             ansible-playbook -i inventory/hosts.yaml playbooks/common/install_tailscale.yaml
