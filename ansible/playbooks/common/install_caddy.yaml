@@ -1,0 +1,205 @@
+---
+- name: Install and Configure Caddy with Cloudflare DNS Plugin
+  hosts: rpi
+  become: true
+  gather_facts: true
+
+  vars:
+    caddy_download_url: "https://caddyserver.com/api/download?os=linux&arch=arm64&p=github.com%2Fcaddy-dns%2Fcloudflare&idempotency=23757119970210"
+    caddy_binary_path: "/usr/bin/caddy"
+    caddy_config_dir: "/etc/caddy"
+    caddy_data_dir: "/var/lib/caddy"
+    caddy_caddyfile_path: "/etc/caddy/Caddyfile"
+    caddy_cloudflare_token_path: "/etc/caddy/cloudflare_token"
+    # cloudflare_api_token_secret_id should be defined in vault
+    # bws_access_token should be defined in vault
+
+  tasks:
+    # Create caddy system group
+    - name: Create caddy system group
+      group:
+        name: caddy
+        system: true
+        state: present
+
+    # Create caddy system user with secure settings
+    - name: Create caddy system user
+      user:
+        name: caddy
+        group: caddy
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ caddy_data_dir }}"
+        create_home: true
+        comment: "Caddy web server"
+        state: present
+
+    # Create configuration directory
+    - name: Create Caddy configuration directory
+      file:
+        path: "{{ caddy_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    # Create data directory for certificates and state
+    - name: Create Caddy data directory
+      file:
+        path: "{{ caddy_data_dir }}"
+        state: directory
+        owner: caddy
+        group: caddy
+        mode: '0750'
+
+    # Download Caddy with cloudflare-dns plugin
+    - name: Download Caddy binary with Cloudflare DNS plugin
+      get_url:
+        url: "{{ caddy_download_url }}"
+        dest: "{{ caddy_binary_path }}"
+        mode: '0755'
+        owner: root
+        group: root
+      register: caddy_download
+
+    # Verify Caddy installation
+    - name: Verify Caddy installation
+      command: caddy version
+      register: caddy_version_check
+      changed_when: false
+
+    - name: Display Caddy version
+      debug:
+        msg: "Caddy installed: {{ caddy_version_check.stdout }}"
+
+    # List Caddy modules to verify cloudflare-dns plugin
+    - name: Verify Cloudflare DNS plugin is installed
+      shell: caddy list-modules | grep cloudflare
+      register: caddy_cloudflare_check
+      changed_when: false
+      failed_when: caddy_cloudflare_check.rc != 0
+
+    - name: Display Cloudflare DNS plugin status
+      debug:
+        msg: "Cloudflare DNS plugin found: {{ caddy_cloudflare_check.stdout }}"
+
+    # Fetch Cloudflare API token from Bitwarden Secrets Manager
+    - name: Fetch Cloudflare API token from Bitwarden
+      shell: bws secret get "{{ cloudflare_api_token_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: cloudflare_token_result
+      no_log: true
+      changed_when: false
+      when: cloudflare_api_token_secret_id is defined
+
+    - name: Parse Cloudflare token from Bitwarden response
+      set_fact:
+        cloudflare_api_token: "{{ (cloudflare_token_result.stdout | from_json).value }}"
+      no_log: true
+      when: cloudflare_api_token_secret_id is defined
+
+    # Store Cloudflare token securely for Caddy to use
+    - name: Create Cloudflare token file for Caddy
+      copy:
+        content: "{{ cloudflare_api_token }}"
+        dest: "{{ caddy_cloudflare_token_path }}"
+        owner: caddy
+        group: caddy
+        mode: '0400'
+      no_log: true
+      when: cloudflare_api_token_secret_id is defined
+
+    # Create minimal Caddyfile so service can start (OpenTofu will manage actual configuration)
+    - name: Create minimal Caddyfile placeholder
+      copy:
+        content: |
+          # Caddyfile managed by OpenTofu
+          # This is a placeholder to allow the Caddy service to start
+          # OpenTofu will replace this file with actual reverse proxy configuration
+
+          {
+            # Global options
+          }
+        dest: "{{ caddy_caddyfile_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+        force: false
+
+    # Create systemd service file
+    - name: Create Caddy systemd service file
+      copy:
+        content: |
+          [Unit]
+          Description=Caddy
+          Documentation=https://caddyserver.com/docs/
+          After=network.target network-online.target
+          Requires=network-online.target
+
+          [Service]
+          Type=notify
+          User=caddy
+          Group=caddy
+          ExecStart=/usr/bin/caddy run --environ --config /etc/caddy/Caddyfile
+          ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --force
+          TimeoutStopSec=5s
+          LimitNOFILE=1048576
+          PrivateTmp=true
+          ProtectSystem=full
+          AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+
+          # Load Cloudflare API token as environment variable
+          Environment=CLOUDFLARE_API_TOKEN_FILE={{ caddy_cloudflare_token_path }}
+          EnvironmentFile=-/etc/caddy/caddy.env
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/caddy.service
+        owner: root
+        group: root
+        mode: '0644'
+      register: caddy_service_file
+
+    # Create environment file for additional configuration
+    - name: Create Caddy environment file
+      copy:
+        content: |
+          # Additional environment variables for Caddy
+          # Read Cloudflare token from file
+          CLOUDFLARE_API_TOKEN={{ cloudflare_api_token | default('') }}
+        dest: /etc/caddy/caddy.env
+        owner: caddy
+        group: caddy
+        mode: '0400'
+      no_log: true
+      when: cloudflare_api_token_secret_id is defined
+
+    # Reload systemd daemon if service file changed
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
+      when: caddy_service_file.changed
+
+    # Enable and start Caddy service
+    - name: Enable and start Caddy service
+      systemd:
+        name: caddy
+        enabled: true
+        state: started
+
+    # Verify Caddy service is running
+    - name: Check Caddy service status
+      systemd:
+        name: caddy
+      register: caddy_service_status
+
+    - name: Display Caddy service status
+      debug:
+        msg: "Caddy service is {{ caddy_service_status.status.ActiveState }}"
+
+    # Configuration complete. Caddy is now installed and running.
+    # Next steps:
+    # - Caddyfile configuration will be managed by OpenTofu
+    # - OpenTofu will manage both DNS records and reverse proxy configuration
+    # - Cloudflare API token is securely stored at /etc/caddy/cloudflare_token
+    # - View logs: journalctl -u caddy -f
+    # - Check status: systemctl status caddy

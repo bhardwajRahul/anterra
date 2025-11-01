@@ -22,7 +22,8 @@ anterra/
 │   ├── playbooks/                        # Ansible playbooks
 │   │   └── common/                       # Common playbooks for all hosts
 │   │       ├── install_tailscale.yaml    # Tailscale installation and configuration
-│   │       └── install_bitwarden.yaml    # Bitwarden Secrets Manager CLI installation
+│   │       ├── install_bitwarden.yaml    # Bitwarden Secrets Manager CLI installation
+│   │       └── install_caddy.yaml        # Caddy web server with Cloudflare DNS plugin
 │   └── vault/                            # Ansible vault configuration
 │       └── .vault_password               # Vault password file (gitignored)
 └── opentofu/                             # OpenTofu infrastructure as code
@@ -249,6 +250,103 @@ resource "example_resource" "foo" {
 **Reference**:
 - [Bitwarden Secrets Manager CLI Documentation](https://bitwarden.com/help/secrets-manager-cli/)
 - [Bitwarden Terraform Provider](https://github.com/bitwarden/terraform-provider-bitwarden-secrets)
+
+#### Caddy Web Server Installation with Cloudflare DNS
+
+**File**: `ansible/playbooks/common/install_caddy.yaml`
+
+Installs Caddy web server with the Cloudflare DNS plugin for automatic HTTPS certificate management. This playbook focuses on installation only - the Caddyfile configuration is managed separately via OpenTofu for unified infrastructure management.
+
+**Features**:
+- Downloads custom-built Caddy binary with cloudflare-dns plugin for ARM64
+- Creates dedicated system user and group with secure settings
+- Sets up systemd service with security hardening
+- Fetches Cloudflare API token from Bitwarden Secrets Manager
+- Configures environment for automatic HTTPS certificate management via DNS-01 challenge
+- **Does NOT create Caddyfile** - configuration managed by OpenTofu
+
+**Prerequisites**:
+
+1. Set up Cloudflare API token:
+   - Log in to Cloudflare dashboard
+   - Go to My Profile > API Tokens
+   - Create token with "Zone - DNS - Edit" permissions for your domain
+   - Store the token in Bitwarden Secrets Manager
+
+2. Add the Cloudflare token secret ID to Ansible Vault:
+   ```bash
+   cd ansible
+   ansible-vault edit inventory/group_vars/all/secrets.yaml
+   ```
+   Add: `cloudflare_api_token_secret_id: "your-bitwarden-secret-id"`
+
+3. Ensure `bws_access_token` is already configured (see Bitwarden section above)
+
+4. **CRITICAL**: Grant machine account access to the Bitwarden Project containing the Cloudflare token
+
+**Basic Usage**:
+
+Run the playbook to install Caddy:
+```bash
+cd ansible
+ansible-playbook -i inventory/hosts.yaml playbooks/common/install_caddy.yaml
+```
+
+**OpenTofu Integration**:
+
+After installation, reverse proxy configuration is managed through OpenTofu:
+- OpenTofu creates and manages the Caddyfile at `/etc/caddy/Caddyfile`
+- DNS records and reverse proxy configuration are managed together
+- This ensures consistency between DNS entries and proxy configurations
+- See the OpenTofu Cloudflare module for configuration management
+
+**Service Management**:
+
+```bash
+# Check service status
+systemctl status caddy
+
+# View logs
+journalctl -u caddy -f
+
+# Reload configuration (graceful, no downtime)
+sudo systemctl reload caddy
+
+# Restart service
+sudo systemctl restart caddy
+```
+
+**File Locations**:
+- Binary: `/usr/bin/caddy`
+- Configuration: `/etc/caddy/Caddyfile` (managed by OpenTofu)
+- Data/Certificates: `/var/lib/caddy/`
+- Cloudflare token: `/etc/caddy/cloudflare_token` (secure, readable by caddy user only)
+- Environment file: `/etc/caddy/caddy.env`
+- Systemd service: `/etc/systemd/system/caddy.service`
+
+**Security Features**:
+- Runs as dedicated `caddy` system user with `/usr/sbin/nologin` shell
+- Cloudflare token stored with 0400 permissions (owner read-only)
+- Systemd service includes security hardening (PrivateTmp, ProtectSystem)
+- Minimal capabilities (CAP_NET_ADMIN, CAP_NET_BIND_SERVICE)
+
+**Notes**:
+- Caddy automatically obtains and renews HTTPS certificates via DNS-01 challenge
+- DNS-01 challenge allows certificates for servers behind Cloudflare proxy
+- Certificates are stored in `/var/lib/caddy/.local/share/caddy/`
+- No web root directory is created (reverse proxy only configuration)
+- Cloudflare proxy can be enabled (orange cloud) for additional DDoS protection
+
+**Troubleshooting**:
+- If certificate issuance fails, check: `journalctl -u caddy -n 100`
+- Verify Cloudflare API token has correct permissions
+- Ensure DNS records exist for domains in Caddyfile
+- Validate Caddyfile syntax: `caddy validate --config /etc/caddy/Caddyfile`
+
+**Reference**:
+- [Caddy Documentation](https://caddyserver.com/docs/)
+- [Cloudflare DNS Plugin](https://github.com/caddy-dns/cloudflare)
+- [Caddy Reverse Proxy Guide](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
 
 ### OpenTofu Configuration
 
