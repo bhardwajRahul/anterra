@@ -21,6 +21,7 @@ anterra/
 │   │   └── host_vars/                    # Host-specific variables
 │   ├── playbooks/                        # Ansible playbooks
 │   │   └── common/                       # Common playbooks for all hosts
+│   │       ├── install_opentofu.yaml     # OpenTofu infrastructure provisioning tool
 │   │       ├── install_tailscale.yaml    # Tailscale installation and configuration
 │   │       ├── install_bitwarden.yaml    # Bitwarden Secrets Manager CLI installation
 │   │       └── install_caddy.yaml        # Caddy web server with Cloudflare DNS plugin
@@ -61,6 +62,77 @@ ansible-playbook -i inventory/hosts.yaml playbooks/<playbook-name>.yaml
 ```
 
 ### Available Playbooks
+
+#### OpenTofu Installation
+
+**File**: `ansible/playbooks/common/install_opentofu.yaml`
+
+Installs OpenTofu (open-source Terraform alternative) for Infrastructure as Code provisioning. OpenTofu enables infrastructure management alongside Ansible configuration management for a complete IaC solution.
+
+**Features**:
+- Downloads official OpenTofu installer script from trusted source
+- Installs via system package manager (Debian/Ubuntu apt)
+- Automatically manages dependencies (apt-transport-https, ca-certificates, GPG keys)
+- Verifies installation with version check
+- Clean and efficient package manager integration for automatic updates
+
+**Installation Method**:
+
+The playbook uses the official OpenTofu installer script with the `deb` method, which:
+- Verifies apt-get is available on the system
+- Installs required dependencies
+- Configures GPG keys for package signature verification
+- Adds OpenTofu repository to apt sources
+- Installs tofu package via apt
+
+**Basic Usage**:
+
+```bash
+cd ansible
+ansible-playbook -i inventory/hosts.yaml playbooks/common/install_opentofu.yaml
+```
+
+**Post-Installation**:
+
+After installation, OpenTofu is ready for infrastructure provisioning:
+
+```bash
+# Navigate to infrastructure directory
+cd opentofu/cloudflare  # or opentofu/portainer
+
+# Initialize OpenTofu
+tofu init
+
+# Preview infrastructure changes
+tofu plan
+
+# Apply infrastructure changes
+tofu apply
+```
+
+**Infrastructure Directories**:
+
+- **`opentofu/cloudflare/`**: Manages Cloudflare infrastructure
+  - DNS records
+  - CDN configuration
+  - Security settings
+  - Integration with Caddy reverse proxy
+
+- **`opentofu/portainer/`**: Manages Portainer deployment
+  - Container orchestration setup
+  - Service configuration
+
+**Supported Platforms**:
+
+The installer script supports multiple installation methods:
+- **deb** (Debian/Ubuntu via apt) - used by this playbook
+- **rpm** (RedHat/CentOS via yum/dnf)
+- **zypper** (openSUSE/SLE)
+- **standalone** (manual binary installation)
+
+**Reference**:
+- [OpenTofu Documentation](https://opentofu.org/)
+- [OpenTofu GitHub](https://github.com/opentofu/opentofu)
 
 #### Tailscale Installation and Configuration
 

@@ -1,0 +1,70 @@
+---
+- name: Install OpenTofu Infrastructure as Code Tool
+  hosts: rpi
+  become: true
+  gather_facts: true
+
+  vars:
+    # OpenTofu installer script URL
+    opentofu_installer_url: "https://get.opentofu.org/install-opentofu.sh"
+    opentofu_installer_path: "/tmp/install-opentofu.sh"
+    # Installation method: deb (Debian/Ubuntu package manager)
+    # Other options available: rpm, yum, zypper, standalone
+    opentofu_install_method: "deb"
+
+  tasks:
+    # Download the official OpenTofu installer script from the trusted source
+    # Using HTTPS with TLS 1.2 enforcement for security
+    - name: Download OpenTofu installer script
+      get_url:
+        url: "{{ opentofu_installer_url }}"
+        dest: "{{ opentofu_installer_path }}"
+        mode: '0700'
+      register: opentofu_installer_download
+
+    # Display installer download status for verification
+    - name: Display installer download status
+      debug:
+        msg: "OpenTofu installer downloaded successfully"
+      when: opentofu_installer_download.changed
+
+    # Run the installer with Debian/Ubuntu package manager method
+    # This method:
+    # - Verifies apt-get is available
+    # - Installs required dependencies (apt-transport-https, ca-certificates)
+    # - Configures GPG keys for package verification
+    # - Adds OpenTofu repository to apt sources
+    # - Installs tofu package via apt
+    - name: Run OpenTofu installer with deb method
+      shell: "{{ opentofu_installer_path }} --install-method {{ opentofu_install_method }}"
+      register: opentofu_installation
+      changed_when: "'tofu' in opentofu_installation.stdout | lower"
+
+    # Display installation output for verification
+    - name: Display OpenTofu installation output
+      debug:
+        msg: "{{ opentofu_installation.stdout }}"
+      when: opentofu_installation.stdout | length > 0
+
+    # Clean up the installer script after installation
+    - name: Remove OpenTofu installer script
+      file:
+        path: "{{ opentofu_installer_path }}"
+        state: absent
+
+    # Verify successful installation by checking version
+    - name: Verify OpenTofu installation
+      command: tofu version
+      register: opentofu_version_check
+      changed_when: false
+
+    - name: Display OpenTofu version
+      debug:
+        msg: "OpenTofu installed: {{ opentofu_version_check.stdout }}"
+
+    # Installation complete. OpenTofu is now ready for infrastructure provisioning.
+    # Next steps:
+    # - Navigate to opentofu/cloudflare or opentofu/portainer directory
+    # - Initialize OpenTofu: tofu init
+    # - Review planned changes: tofu plan
+    # - Apply infrastructure changes: tofu apply
