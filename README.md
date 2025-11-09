@@ -422,21 +422,102 @@ sudo systemctl restart caddy
 
 ### OpenTofu Configuration
 
+OpenTofu uses Bitwarden Secrets Manager to securely fetch API tokens and credentials at runtime. This eliminates the need to store sensitive credentials in configuration files.
+
+#### Bitwarden Secrets Manager Integration
+
+**Prerequisites**:
+
+1. **Machine Account Setup** (one-time):
+   - Log in to Bitwarden Secrets Manager
+   - Navigate to Settings > Machine Accounts
+   - Create a new machine account
+   - Generate an access token for the machine account
+   - **IMPORTANT**: Grant the machine account access to Projects containing your secrets
+     - Without Project access, the machine account cannot retrieve secrets
+     - Go to machine account settings > Access > Add Projects
+
+2. **Store Secrets in Bitwarden**:
+   - Create or use an existing Project in Bitwarden Secrets Manager
+   - Add your infrastructure secrets (e.g., Cloudflare API token, Portainer credentials)
+   - Note the Secret IDs (UUIDs) - you'll need these for OpenTofu configuration
+
+3. **Configure Access Token** (one-time setup):
+
+   Add the Bitwarden access token to your shell profile for persistent access:
+
+   ```bash
+   # Edit your shell profile
+   nano ~/.bashrc  # or ~/.zshrc if using zsh
+
+   # Add this line at the end
+   export TF_VAR_bws_access_token="your-bitwarden-access-token-here"
+
+   # Save and reload
+   source ~/.bashrc
+
+   # Verify it's set
+   echo $TF_VAR_bws_access_token
+   ```
+
+   This environment variable will be available to all OpenTofu commands and persists across terminal sessions.
+
+**Security Note**:
+- Your `~/.bashrc` file is only readable by your user account (not other users on the system)
+- The access token can be rotated in Bitwarden if needed - just update the export line in `~/.bashrc`
+- For shared systems, consider using more restrictive file permissions: `chmod 600 ~/.bashrc`
+
 #### Cloudflare
-```bash
-cd opentofu/cloudflare
-tofu init
-tofu plan
-tofu apply
-```
+
+**Configuration Steps**:
+
+1. Get your Cloudflare API token Secret ID from Bitwarden web interface
+
+2. Update the configuration file with your Secret ID:
+   ```bash
+   cd opentofu/cloudflare
+   nano tofu.auto.tfvars
+   ```
+
+   Replace the placeholder with your actual Secret ID:
+   ```hcl
+   cloudflare_api_token_secret_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+   ```
+
+3. Initialize and apply:
+   ```bash
+   # Download providers (first time only)
+   tofu init
+
+   # Preview changes
+   tofu plan
+
+   # Apply infrastructure changes
+   tofu apply
+   ```
+
+**How It Works**:
+- OpenTofu authenticates to Bitwarden using `TF_VAR_bws_access_token` from your environment
+- Fetches the Cloudflare API token using the Secret ID from `tofu.auto.tfvars`
+- Uses the token to authenticate with Cloudflare and manage infrastructure
+- The actual API token is never stored in any configuration files
+
+**Files**:
+- `providers.tofu` - Defines required providers (Cloudflare + Bitwarden)
+- `bitwarden.tofu` - Configures Bitwarden provider and fetches secrets
+- `variables.tofu` - Declares required variables
+- `tofu.auto.tfvars` - Contains Secret IDs (safe to commit to git)
 
 #### Portainer
+
 ```bash
 cd opentofu/portainer
 tofu init
 tofu plan
 tofu apply
 ```
+
+**Note**: Follow the same Bitwarden integration pattern as Cloudflare if credentials are needed.
 
 ## Security
 
