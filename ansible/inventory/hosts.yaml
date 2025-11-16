@@ -1,16 +1,12 @@
 ---
 all:
   children:
-    rpi:
+    caddy_hosts:
       hosts:
         rpi:
-          ansible_connection: local
+        ovh_vps:
     proxmox:
       hosts:
         samba-share:
-          ansible_host: "{{ samba_share_ip }}"
-          ansible_user: root
         mediacenter:
-          ansible_host: "{{ mediacenter_ip }}"
-          ansible_user: mediauser
 ...
