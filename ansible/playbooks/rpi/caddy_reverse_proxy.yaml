@@ -1,0 +1,24 @@
+---
+- name: Configure Caddy Reverse Proxy Records
+  hosts: rpi
+  become: true
+
+  tasks:
+    - name: Render reverse proxy configuration from template
+      ansible.builtin.template:
+        src: templates/caddy_reverse_proxy.j2
+        dest: /tmp/caddy_reverse_proxy_block.txt
+      register: rendered_config
+
+    - name: Insert reverse proxy configuration into Caddyfile
+      ansible.builtin.blockinfile:
+        path: /etc/caddy/Caddyfile
+        block: "{{ lookup('file', '/tmp/caddy_reverse_proxy_block.txt') }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR REVERSE PROXIES"
+      notify: Reload Caddy
+
+  handlers:
+    - name: Reload Caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded

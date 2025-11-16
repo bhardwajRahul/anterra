@@ -1,6 +1,8 @@
 ---
 all:
-  hosts:
+  children:
     rpi:
-      ansible_connection: local
+      hosts:
+        rpi:
+          ansible_connection: local
 ...

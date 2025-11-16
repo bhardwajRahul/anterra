@@ -160,17 +160,75 @@ Installs native ARM64 `bws` CLI binary to `/opt/bitwarden/` with symlink at `/us
 ```
 
 ### Caddy Web Server
-**File**: `playbooks/common/install_caddy.yaml`
 
-Installs Caddy with Cloudflare DNS plugin for automatic HTTPS via DNS-01 challenge.
+**Files**:
+- `playbooks/common/install_caddy.yaml` - Initial installation and global TLS setup
+- `playbooks/rpi/caddy_reverse_proxy.yaml` - Reverse proxy record management
+- `playbooks/rpi/templates/caddy_reverse_proxy.j2` - Jinja2 template for generating proxy blocks
+- `inventory/group_vars/rpi/caddy_records.yaml` - Reverse proxy record definitions
 
-**Installation Only**: Caddyfile configuration managed by OpenTofu (not Ansible).
+**Initial Setup** (`install_caddy.yaml`):
+- Installs Caddy binary with Cloudflare DNS plugin
+- Creates systemd service with security hardening
+- Fetches Cloudflare API token from Bitwarden Secrets Manager
+- Configures global TLS block with DNS-01 ACME challenge
+
+**Global TLS Configuration**:
+```caddyfile
+{
+  acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+}
+```
+- Uses `acme_dns cloudflare` for automatic HTTPS via DNS-01 challenge
+- Cloudflare API token passed via environment variable (`CLOUDFLARE_API_TOKEN`)
+- No requirement for domains to be publicly accessible (uses Cloudflare API instead)
+- Automatic certificate renewal handled by Caddy
+
+**Ongoing Management** (`caddy_reverse_proxy.yaml`):
+Manage reverse proxy records by editing the YAML file and running the playbook.
+
+**Workflow**:
+1. **Edit record definitions**: Add or update reverse proxy records in `inventory/group_vars/rpi/caddy_records.yaml`
+2. **Run the playbook**:
+   ```bash
+   ansible-playbook -i inventory/hosts.yaml playbooks/rpi/caddy_reverse_proxy.yaml
+   ```
+3. **Caddy automatically**:
+   - Reloads the updated configuration
+   - Requests certificates for new domains via Cloudflare DNS-01 challenge
+   - Deploys certificates without service interruption
+
+**Defining Reverse Proxy Records** (`inventory/group_vars/rpi/caddy_records.yaml`):
+```yaml
+reverse_proxy_records:
+  # HTTP backend (no TLS)
+  - domain: service.example.com
+    upstream: 10.0.0.10:8080
+
+  # HTTPS backend with self-signed certificate
+  - domain: secure.example.com
+    upstream: https://10.0.0.10:443
+    tls_skip_verify: true
+
+  # Multiple records can be defined, separated by empty lines
+  - domain: another.example.com
+    upstream: 10.0.0.20:9000
+```
+
+**How It Works**:
+1. Template (`caddy_reverse_proxy.j2`) iterates over records in `group_vars/rpi/caddy_records.yaml`
+2. Generates reverse proxy configuration blocks
+3. Uses `blockinfile` module to insert into Caddyfile (preserves other sections)
+4. Caddy reloads and automatically requests certificates for new domains
 
 **Key Variables** (in Ansible Vault):
-- `cloudflare_api_token_secret_id`: Bitwarden secret ID
-- `bws_access_token`: For fetching token from Bitwarden
+- `cloudflare_api_token_secret_id`: Bitwarden secret ID for Cloudflare API token
+- `bws_access_token`: Bitwarden machine account access token
 
-**Integration**: OpenTofu manages both DNS records and Caddy reverse proxy configuration together.
+**Integration**:
+- OpenTofu manages DNS A records in Cloudflare
+- Ansible manages Caddy reverse proxy records and automatic TLS setup
+- Bitwarden Secrets Manager provides credentials securely at runtime
 
 ## Configuration Files
 
@@ -234,10 +292,13 @@ locals {
    - All configuration version controlled and safe to commit
    - Separation between internal (homelab) and external (VPS) services
 
-4. **Caddy + OpenTofu Integration**:
-   - Ansible installs Caddy web server
-   - OpenTofu manages Caddyfile configuration (future work)
-   - Unified DNS and reverse proxy management
+4. **Caddy + Ansible Integration**:
+   - Ansible installs Caddy with Cloudflare DNS plugin for automatic HTTPS
+   - Global TLS configured for DNS-01 ACME challenge (no public access required)
+   - Reverse proxy records defined in `group_vars/rpi/caddy_records.yaml` (version controlled)
+   - Ansible manages Caddyfile configuration via Jinja2 templates and `blockinfile`
+   - OpenTofu manages DNS A records in Cloudflare
+   - Clear separation: DNS records (OpenTofu) + reverse proxy config (Ansible) + TLS automation (Caddy)
 
 ## Reference
 

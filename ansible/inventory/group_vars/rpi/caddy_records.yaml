@@ -1,0 +1,20 @@
+---
+# Caddy reverse proxy records for RPi host group
+# These records define how Caddy routes traffic to backend services
+#
+# Record fields:
+#   - domain: The domain name to reverse proxy
+#   - upstream: The backend service address (IP:port)
+#   - tls_skip_verify: (optional, default: false) Skip TLS verification for HTTPS upstreams
+#
+# Examples:
+#   - domain: service.example.com
+#     upstream: 10.0.0.10:8080                    # HTTP backend
+#   - domain: service.example.com
+#     upstream: https://10.0.0.10:443
+#     tls_skip_verify: true                        # HTTPS backend with self-signed cert
+
+reverse_proxy_records:
+  - domain: ui.ketwork.in
+    upstream: https://10.0.0.1:443
+    tls_skip_verify: true

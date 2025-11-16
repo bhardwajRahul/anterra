@@ -108,22 +108,29 @@
       no_log: true
       when: cloudflare_api_token_secret_id is defined
 
-    # Create minimal Caddyfile so service can start (OpenTofu will manage actual configuration)
-    - name: Create minimal Caddyfile placeholder
+    # Create minimal Caddyfile if it doesn't exist
+    - name: Create minimal Caddyfile
       copy:
-        content: |
-          # Caddyfile managed by OpenTofu
-          # This is a placeholder to allow the Caddy service to start
-          # OpenTofu will replace this file with actual reverse proxy configuration
-
-          {
-            # Global options
-          }
+        content: ""
         dest: "{{ caddy_caddyfile_path }}"
         owner: root
         group: root
         mode: '0644'
         force: false
+
+    # Add global TLS configuration block for Cloudflare DNS-01 challenge
+    - name: Configure Cloudflare DNS-01 ACME challenge
+      ansible.builtin.blockinfile:
+        path: "{{ caddy_caddyfile_path }}"
+        block: |
+          # Global configuration for TLS and ACME challenges
+          {
+            # Use Cloudflare DNS-01 challenge for automatic certificate management
+            acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+          }
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR GLOBAL TLS"
+        insertbefore: "BEGIN"
+      notify: Reload Caddy
 
     # Create systemd service file
     - name: Create Caddy systemd service file
@@ -198,8 +205,15 @@
 
     # Configuration complete. Caddy is now installed and running.
     # Next steps:
-    # - Caddyfile configuration will be managed by OpenTofu
-    # - OpenTofu will manage both DNS records and reverse proxy configuration
+    # - Global TLS configuration uses Cloudflare DNS-01 challenge for automatic certificate management
+    # - Reverse proxy records are added by the 'caddy_reverse_proxy.yaml' playbook
+    # - Cloudflare DNS A records are managed by OpenTofu
     # - Cloudflare API token is securely stored at /etc/caddy/cloudflare_token
     # - View logs: journalctl -u caddy -f
     # - Check status: systemctl status caddy
+
+  handlers:
+    - name: Reload Caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded
