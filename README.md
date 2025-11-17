@@ -164,13 +164,18 @@ Installs native ARM64 `bws` CLI binary to `/opt/bitwarden/` with symlink at `/us
 
 Installs Caddy with Cloudflare DNS plugin for automatic HTTPS via DNS-01 challenge.
 
-**Installation Only**: Caddyfile configuration managed by OpenTofu (not Ansible).
+**What This Playbook Does**:
+- Installs Caddy binary with cloudflare-dns plugin (ARM64)
+- Creates caddy system user with proper permissions
+- Sets up systemd service with security hardening
+- Fetches Cloudflare API token from Bitwarden and stores at `/etc/caddy/cloudflare_token`
+
+**What This Playbook Does NOT Do**:
+- Create Caddyfile configuration (managed by separate playbooks)
 
 **Key Variables** (in Ansible Vault):
 - `cloudflare_api_token_secret_id`: Bitwarden secret ID
 - `bws_access_token`: For fetching token from Bitwarden
-
-**Integration**: OpenTofu manages both DNS records and Caddy reverse proxy configuration together.
 
 ## Configuration Files
 
@@ -233,11 +238,6 @@ locals {
    - IP addresses fetched from Bitwarden (local values, not hardcoded)
    - All configuration version controlled and safe to commit
    - Separation between internal (homelab) and external (VPS) services
-
-4. **Caddy + OpenTofu Integration**:
-   - Ansible installs Caddy web server
-   - OpenTofu manages Caddyfile configuration (future work)
-   - Unified DNS and reverse proxy management
 
 ## Reference
 
