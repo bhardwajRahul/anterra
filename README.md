@@ -208,7 +208,15 @@ Manage reverse proxy records by editing the YAML file and running the playbook. 
    - Requests certificates for new domains via Cloudflare DNS-01 challenge
    - Deploys certificates without service interruption
 
-**Defining Reverse Proxy Records** (`playbooks/caddy/caddy_records.yaml`):
+**What This Playbook Does**:
+- Installs Caddy binary with cloudflare-dns plugin (ARM64)
+- Creates caddy system user with proper permissions
+- Sets up systemd service with security hardening
+- Fetches Cloudflare API token from Bitwarden and stores at `/etc/caddy/cloudflare_token`
+
+**What This Playbook Does NOT Do**:
+- Create Caddyfile configuration (managed by separate playbooks)
+**Defining Reverse Proxy Records** (`inventory/group_vars/rpi/caddy_records.yaml`):
 ```yaml
 reverse_proxy_records:
   # HTTP backend (no TLS)
