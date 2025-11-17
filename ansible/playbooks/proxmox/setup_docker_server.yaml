@@ -90,16 +90,17 @@
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
-    - name: Install Docker
+    - name: Install Docker (version 28.0.1 for Portainer EE compatibility)
       apt:
         name:
-          - docker-ce
-          - docker-ce-cli
+          - docker-ce=5:28.0.1-1~ubuntu.{{ ansible_distribution_version }}~{{ ansible_lsb.codename }}
+          - docker-ce-cli=5:28.0.1-1~ubuntu.{{ ansible_distribution_version }}~{{ ansible_lsb.codename }}
           - containerd.io
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
         update_cache: true
+        allow_downgrade: true
 
     - name: Enable and start Docker service
       systemd:
