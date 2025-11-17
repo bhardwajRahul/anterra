@@ -31,7 +31,7 @@
 # Playbook to reset Caddyfile to a clean state
 # This removes the old Caddyfile and prepares for fresh configuration
 - name: Reset Caddyfile on Caddy hosts
-  hosts: caddy_hosts
+  hosts: caddy
   become: true
 
   tasks:
@@ -55,12 +55,6 @@
         name: caddy
         state: stopped
 
-    - name: Display next steps
+    - name: Display reset status
       debug:
-        msg: |
-          Caddyfile has been cleared on {{ inventory_hostname }}.
-          Backup saved to /etc/caddy/Caddyfile.backup.*
-
-          Next steps:
-          1. Run: ansible-playbook -i inventory/hosts.yaml playbooks/common/install_caddy.yaml
-          2. Run: ansible-playbook -i inventory/hosts.yaml playbooks/caddy_hosts/caddy_reverse_proxy.yaml
+        msg: "Caddyfile has been cleared on {{ inventory_hostname }}. Backup saved to /etc/caddy/Caddyfile.backup.*"

@@ -29,11 +29,13 @@
       when: ovh_vps_ssh_password is defined
 
 - name: Configure Caddy Reverse Proxy Records
-  hosts: caddy_hosts
+  hosts: caddy
   become: true
 
+  vars_files:
+    - caddy_records.yaml
+
   tasks:
-    # VPS-specific configuration
     - name: Update nameserver in resolv.conf (VPS only)
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
@@ -42,7 +44,6 @@
         state: present
       when: inventory_hostname == 'ovh_vps'
 
-    # Render and insert reverse proxy configuration
     - name: Render reverse proxy configuration from template
       ansible.builtin.template:
         src: templates/caddy_reverse_proxy.j2
@@ -54,7 +55,7 @@
         src: /tmp/caddy_reverse_proxy_block.txt
       register: rendered_content
 
-    - name: Insert reverse proxy configuration into Caddyfile
+    - name: Insert reverse proxy records into Caddyfile
       ansible.builtin.blockinfile:
         path: /etc/caddy/Caddyfile
         block: "{{ rendered_content.content | b64decode }}"

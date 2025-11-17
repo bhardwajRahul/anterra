@@ -12,7 +12,6 @@
     # Generate one at: https://login.tailscale.com/admin/settings/keys
 
   tasks:
-    # Install Tailscale from official installer script (idempotent)
     - name: Install Tailscale from official installer script
       shell: curl -fsSL https://tailscale.com/install.sh | sh
       register: tailscale_install
@@ -81,9 +80,3 @@
         state: present
         sysctl_set: true
       when: enable_subnet_router | bool
-
-    # Configuration complete. Tailscale is now installed and configured.
-    # See the homelab setup documentation for next steps including:
-    # - Manual approval of subnet routes and exit node in Tailscale admin console
-    # - Disabling key expiry for headless devices
-    # - Network connectivity expectations during configuration

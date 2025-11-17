@@ -9,9 +9,6 @@
     bws_install_dir: "/opt/bitwarden"
     bws_binary_path: "{{ bws_install_dir }}/bws"
     bws_symlink_path: "/usr/local/bin/bws"
-    # bws_access_token should be defined in vault secrets
-    # Generate one in Bitwarden Secrets Manager: Settings > Machine Accounts
-    # Map Ansible architecture to Bitwarden release architecture
     bws_arch_map:
       x86_64: "x86_64-unknown-linux-gnu"
       aarch64: "aarch64-unknown-linux-gnu"
@@ -19,21 +16,18 @@
     bws_download_url: "https://github.com/bitwarden/sdk-sm/releases/download/bws-v{{ bws_version }}/bws-{{ bws_arch }}-{{ bws_version }}.zip"
 
   tasks:
-    # Install unzip if not already present (required to extract the binary)
     - name: Ensure unzip is installed
       apt:
         name: unzip
         state: present
         update_cache: false
 
-    # Create installation directory for Bitwarden CLI
     - name: Create Bitwarden installation directory
       file:
         path: "{{ bws_install_dir }}"
         state: directory
         mode: '0755'
 
-    # Download the bws CLI binary for ARM64 Linux
     - name: Download Bitwarden Secrets Manager CLI
       get_url:
         url: "{{ bws_download_url }}"
@@ -42,7 +36,6 @@
       register: bws_download
       changed_when: bws_download.changed
 
-    # Extract the binary from the zip archive
     - name: Extract bws binary
       unarchive:
         src: "/tmp/bws-{{ bws_arch }}-{{ bws_version }}.zip"
@@ -51,14 +44,12 @@
         creates: "{{ bws_binary_path }}"
       register: bws_extract
 
-    # Set executable permissions on the binary
     - name: Set executable permissions on bws binary
       file:
         path: "{{ bws_binary_path }}"
         mode: '0755'
         state: file
 
-    # Create symlink for system-wide access
     - name: Create symlink to /usr/local/bin for system-wide access
       file:
         src: "{{ bws_binary_path }}"
@@ -66,13 +57,11 @@
         state: link
         force: true
 
-    # Clean up downloaded zip file
     - name: Remove downloaded zip file
       file:
         path: "/tmp/bws-{{ bws_arch }}-{{ bws_version }}.zip"
         state: absent
 
-    # Verify installation by checking version
     - name: Verify bws installation
       command: bws --version
       register: bws_version_check
@@ -81,10 +70,3 @@
     - name: Display bws version
       debug:
         msg: "Bitwarden Secrets Manager CLI installed: {{ bws_version_check.stdout }}"
-
-    # Configuration complete. The bws CLI is now installed and ready to use.
-    # Next steps:
-    # - Store bws_access_token in Ansible Vault (inventory/group_vars/all/secrets.yaml)
-    # - Use bws in playbooks with vault token: shell: bws secret get <secret-id> --access-token "{{ bws_access_token }}"
-    # - Alternative: Set environment variable in task: environment: BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
-    # - For OpenTofu: Use external data source or official bitwarden-secrets provider

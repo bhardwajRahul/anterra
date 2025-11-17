@@ -14,7 +14,6 @@
     # - mediacenter_ip (Mediacenter VM IP address)
 
   tasks:
-    # Fetch mediauser password from Bitwarden (used for both SSH and sudo)
     - name: Fetch mediauser password from Bitwarden
       shell: bws secret get {{ mediacenter_password_uuid }} --access-token "{{ bws_access_token }}"
       register: mediauser_password_result
@@ -28,11 +27,9 @@
         ansible_become_pass: "{{ (mediauser_password_result.stdout | from_json).value }}"
       no_log: true
 
-    # Now gather facts after we have sudo credentials
     - name: Gather facts
       setup:
 
-    # Fetch Samba password from Bitwarden for mounting shares
     - name: Fetch Samba password from Bitwarden
       shell: bws secret get {{ samba_user_password_uuid }} --access-token "{{ bws_access_token }}"
       register: samba_password_result
@@ -44,7 +41,7 @@
       set_fact:
         samba_share_password: "{{ (samba_password_result.stdout | from_json).value }}"
       no_log: true
-    # Install prerequisites and Intel GPU drivers
+
     - name: Update apt cache
       apt:
         update_cache: true
@@ -63,14 +60,12 @@
           - cifs-utils
         state: present
 
-    # Verify Intel Quick Sync is available
     - name: Check Intel Quick Sync availability
       shell: vainfo
       register: vainfo_output
       changed_when: false
       failed_when: false
 
-    # Add Plex repository and install Plex Media Server
     - name: Download Plex GPG key
       get_url:
         url: https://downloads.plex.tv/plex-keys/PlexSign.key
@@ -89,7 +84,6 @@
         state: present
         update_cache: true
 
-    # Configure Plex user for GPU access
     - name: Add plex user to render group for GPU access
       user:
         name: "{{ plex_user }}"
@@ -102,7 +96,6 @@
         groups: video
         append: true
 
-    # Create mount points for media from Samba share
     - name: Create media mount directories
       file:
         path: "{{ item }}"
@@ -115,8 +108,6 @@
         - /mnt/media/music
         - /mnt/downloads
 
-    # Mount Samba shares for media access
-    # Credentials stored in /etc/plex-smb-credentials (created below)
     - name: Create Samba credentials file
       copy:
         content: |
@@ -148,14 +139,12 @@
       changed_when: mount_result.rc == 0 and mount_result.stdout != ""
       failed_when: false
 
-    # Enable and start Plex service
     - name: Enable and start Plex Media Server
       systemd:
         name: plexmediaserver
         enabled: true
         state: started
 
-    # Configure firewall for Plex (if UFW is installed)
     - name: Check if UFW is installed
       command: which ufw
       register: ufw_check
@@ -168,12 +157,3 @@
         port: '32400'
         proto: tcp
       when: ufw_check.rc == 0
-
-# Plex Media Server installation complete
-# Access Plex at: http://{{ mediacenter_ip }}:32400/web
-# Initial setup required:
-# 1. Sign in with Plex account
-# 2. Add media libraries pointing to /mnt/media/movies, /mnt/media/tv, /mnt/media/music
-# 3. Enable hardware transcoding in Settings > Transcoder
-#    - Use hardware acceleration when available: Intel Quick Sync Video
-# 4. Verify hardware transcoding with: sudo -u plex vainfo

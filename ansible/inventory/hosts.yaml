@@ -1,12 +1,12 @@
 ---
 all:
   children:
-    caddy_hosts:
+    caddy:
       hosts:
         rpi:
         ovh_vps:
     proxmox:
       hosts:
-        samba-share:
+        samba_share:
         mediacenter:
 ...

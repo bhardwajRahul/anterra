@@ -1,4 +1,4 @@
 ---
-# Connection settings for samba-share host
+# Connection settings for samba_share host
 ansible_host: "{{ samba_share_ip }}"
 ansible_user: root
