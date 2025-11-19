@@ -5,9 +5,11 @@ Infrastructure as Code (IaC) repository combining Ansible for configuration mana
 ## Overview
 
 This repository implements a dual-tool IaC approach:
-- **Ansible**: Configuration management and software installation
-- **OpenTofu**: Infrastructure provisioning (Cloudflare, Portainer)
+- **Ansible**: Configuration management and software installation (all infrastructure platforms)
+- **OpenTofu**: Infrastructure provisioning (Cloudflare DNS, Portainer container management)
 - **Bitwarden Secrets Manager**: Runtime secret retrieval (no hardcoded credentials)
+
+**Note on Proxmox**: Proxmox VE cluster is managed manually via the web UI. Ansible playbooks handle VM configuration after manual creation. See [Proxmox VM Setup](#proxmox-vm-setup-for-hardware-passthrough) for hardware passthrough instructions (used for media server with GPU transcoding support).
 
 ## Project Structure
 
@@ -113,11 +115,11 @@ This setup uniquely integrates Bitwarden Secrets Manager directly into OpenTofu 
 - `dns_records.tofu`: DNS A records defined in code (safe to commit)
 
 **What Gets Committed**:
-- ✅ Secret IDs (UUIDs) - just identifiers
-- ✅ DNS records in code
-- ✅ All `.tofu` configuration files
-- ❌ Access tokens (environment variable only)
-- ❌ Actual secret values (fetched at runtime)
+- Secret IDs (UUIDs) - just identifiers
+- DNS records in code
+- All `.tofu` configuration files
+- NOT: Access tokens (environment variable only)
+- NOT: Actual secret values (fetched at runtime)
 
 ## Cloudflare DNS Management
 
