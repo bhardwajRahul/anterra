@@ -34,6 +34,10 @@ anterra/
 │   │   │   ├── caddy_records.yaml        # Reverse proxy record definitions
 │   │   │   └── templates/
 │   │   │       └── caddy_reverse_proxy.j2
+│   │   ├── gluetun/
+│   │   │   ├── README.md                 # Gluetun VPN setup guide
+│   │   │   ├── configure_airvpn_certificates.yaml
+│   │   │   └── airvpn-certs/            # AirVPN certificates (gitignored)
 │   │   └── proxmox/
 │   │       ├── setup_docker_server.yaml  # Docker server setup with Portainer
 │   │       ├── setup_media_server.yaml
@@ -285,6 +289,70 @@ Container stacks are managed through OpenTofu using the `portainer/portainer` pr
 - `docker_data_path`: `/mnt/docker/appdata`
 
 **Stack Templates**: Docker Compose templates in `compose-files/` are rendered with template variables (PUID, PGID, TZ, paths) and deployed via `portainer_stack` resources in `stacks.tofu`.
+
+## Gluetun VPN Stack
+
+The gluetun stack provides a VPN service that tunnels multiple containers through AirVPN. All containers in the stack are configured to route through the VPN connection.
+
+**Containers in the stack**:
+- gluetun: VPN service (routes all other containers through it)
+- qbittorrent: Torrent client
+- radarr: Movie management
+- sonarr: TV series management
+- bazarr: Subtitle management
+- jellyseerr: Media request platform
+- prowlarr: Indexer aggregator
+- flaresolverr: Cloudflare challenge solver
+- librewolf: Private browser
+- profilarr: Profile manager
+
+**Initial Deployment**:
+
+1. Deploy via OpenTofu (takes 15-20 minutes):
+   ```bash
+   cd opentofu/portainer
+   tofu apply
+   ```
+
+2. Containers will deploy but VPN won't connect (expected - requires certificates)
+
+3. Generate AirVPN certificates from https://client.airvpn.org/ (OpenVPN 2.6 format)
+
+4. Place certificates in `ansible/playbooks/gluetun/airvpn-certs/`:
+   ```bash
+   cp client.crt ansible/playbooks/gluetun/airvpn-certs/
+   cp client.key ansible/playbooks/gluetun/airvpn-certs/
+   ```
+
+5. Run the Ansible playbook to deploy certificates to the Docker host:
+   ```bash
+   cd ansible
+   ansible-playbook -i inventory/hosts.yaml playbooks/gluetun/configure_airvpn_certificates.yaml
+   ```
+
+   This playbook will:
+   - Fetch Docker SSH credentials from Bitwarden Secrets Manager
+   - Verify certificate files exist locally
+   - Create gluetun config directory on Docker host
+   - Copy certificates with secure permissions (0600)
+
+   **Prerequisites**:
+   - `docker_ssh_password_uuid` must be defined in Ansible Vault
+   - `docker_ip` must be configured in inventory
+   - `bws_access_token` environment variable set
+
+6. After the playbook completes, manually restart the gluetun container in Portainer:
+   - Go to Portainer dashboard (https://portainer.ketwork.in)
+   - Find the gluetun container
+   - Click "Restart"
+   - Check container logs to verify "VPN connected" message appears
+
+**Storage mounts**:
+- Config: `/mnt/docker/config/` (container configs, gitignored certificates)
+- Media: `/mnt/docker/media/` (SMB mount for movies/TV)
+- Downloads: `/mnt/docker/downloads/` (SMB mount for torrents)
+
+**Certificate management**: AirVPN client certificates are stored in `ansible/playbooks/gluetun/airvpn-certs/` and are gitignored to prevent accidental credential exposure. Certificates must be generated from AirVPN dashboard at https://client.airvpn.org/ (OpenVPN 2.6 format).
 
 ## Configuration Files
 

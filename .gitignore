@@ -15,3 +15,5 @@ ansible/vault/.vault_password
 **/.env
 **/run.sh
 **/.bitwarden/
+**/client.crt
+**/client.key

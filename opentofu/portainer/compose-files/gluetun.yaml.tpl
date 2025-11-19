@@ -40,7 +40,7 @@ services:
       - WEBUI_PORT=8585
     volumes:
       - ${docker_config_path}/qbittorrent/config:/config
-      - ${docker_data_path}/downloads/torrents:/downloads
+      - ${docker_downloads_path}:/downloads
     restart: always
 
   jellyseerr:
@@ -93,8 +93,8 @@ services:
       - TZ=${docker_timezone}
     volumes:
       - ${docker_config_path}/radarr/config:/config
-      - ${docker_data_path}/media/movies:/movies
-      - ${docker_data_path}/downloads/torrents:/downloads
+      - ${docker_media_path}/movies:/movies
+      - ${docker_downloads_path}:/downloads
     restart: always
 
   sonarr:
@@ -108,8 +108,8 @@ services:
       - TZ=${docker_timezone}
     volumes:
       - ${docker_config_path}/sonarr/config:/config
-      - ${docker_data_path}/media/tv:/tv
-      - ${docker_data_path}/downloads/torrents:/downloads
+      - ${docker_media_path}/tv:/tv
+      - ${docker_downloads_path}:/downloads
     restart: always
 
   bazarr:
@@ -123,8 +123,8 @@ services:
       - TZ=${docker_timezone}
     volumes:
       - ${docker_config_path}/bazarr/config:/config
-      - ${docker_data_path}/media/movies:/movies
-      - ${docker_data_path}/media/tv:/tv
+      - ${docker_media_path}/movies:/movies
+      - ${docker_media_path}/tv:/tv
     restart: always
 
   librewolf:

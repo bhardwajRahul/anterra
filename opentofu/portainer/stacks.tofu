@@ -23,7 +23,8 @@ resource "portainer_stack" "gluetun" {
     docker_user_pgid     = data.bitwarden_secret.docker_user_pgid.value
     docker_timezone      = var.docker_timezone
     docker_config_path   = var.docker_config_path
-    docker_data_path     = var.docker_data_path
+    docker_media_path    = var.docker_media_path
+    docker_downloads_path = var.docker_downloads_path
     vpn_input_port       = data.bitwarden_secret.vpn_input_port.value
     outbound_subnet      = data.bitwarden_secret.outbound_subnet.value
   })

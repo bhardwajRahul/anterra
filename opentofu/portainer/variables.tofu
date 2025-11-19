@@ -59,6 +59,18 @@ variable "docker_data_path" {
   type        = string
 }
 
+# Docker media path (SMB mount for media - movies and TV shows)
+variable "docker_media_path" {
+  description = "Path for Docker container media data (SMB mount at /mnt/docker/media)"
+  type        = string
+}
+
+# Docker downloads path (SMB mount for downloads)
+variable "docker_downloads_path" {
+  description = "Path for Docker container downloads data (SMB mount at /mnt/docker/downloads)"
+  type        = string
+}
+
 # Gluetun VPN input port (AirVPN forwarded port)
 variable "vpn_input_port_secret_id" {
   description = "The Bitwarden secret ID for the Gluetun VPN input port"
