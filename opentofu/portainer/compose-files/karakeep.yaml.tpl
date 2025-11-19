@@ -18,6 +18,9 @@ services:
       - NEXTAUTH_URL=${nextauth_url}
       - MEILISEARCH_MASTER_KEY=${meilisearch_master_key}
       - DISABLE_SIGNUPS=true
+      - OPENAI_API_KEY=${openai_api_key}
+      - INFERENCE_TEXT_MODEL=gpt-4o-mini
+      - INFERENCE_IMAGE_MODEL=gpt-4o-mini
     depends_on:
       - chrome
       - meilisearch

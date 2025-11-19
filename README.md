@@ -254,6 +254,7 @@ Karakeep is a self-hosted bookmark manager with AI-powered tagging and full-text
 1. `karakeep_nextauth_url_secret_id` - Application URL (https://keep.ketwork.in)
 2. `karakeep_nextauth_secret_id` - NextAuth session encryption key (generate with `openssl rand -base64 36`)
 3. `karakeep_meilisearch_key_secret_id` - Meilisearch master key (generate with `openssl rand -base64 36`)
+4. `karakeep_openai_api_key_secret_id` - OpenAI API key for AI-powered automatic tagging (optional)
 
 **Stack Components**:
 - **Web**: Main Karakeep application (ghcr.io/karakeep-app/karakeep)
@@ -265,6 +266,12 @@ Karakeep is a self-hosted bookmark manager with AI-powered tagging and full-text
 2. Visit https://keep.ketwork.in and create your admin account
 3. After creating your account, signups are automatically disabled (`DISABLE_SIGNUPS=true`)
 4. If you need to re-enable signups temporarily, remove the `DISABLE_SIGNUPS` environment variable from the compose template and reapply with `tofu apply`
+
+**AI Configuration**:
+- **AI Models**: Configured to use `gpt-4o-mini` for both text and image inference (cost-effective and fast)
+- **Alternative Models**: You can change the models by updating `INFERENCE_TEXT_MODEL` and `INFERENCE_IMAGE_MODEL` in the compose template
+- **Available Models**: Any OpenAI model (gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo, etc.)
+- **Ollama Support**: For local AI inference, replace `OPENAI_API_KEY` with `OLLAMA_BASE_URL` pointing to your Ollama instance
 
 **Important Security Note**: The stack is configured with `DISABLE_SIGNUPS=true` to prevent unauthorized account creation. Only remove this setting temporarily if you need to create additional accounts, then immediately re-enable it and redeploy.
 

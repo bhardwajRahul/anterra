@@ -45,5 +45,6 @@ resource "portainer_stack" "karakeep" {
     nextauth_secret         = data.bitwarden_secret.karakeep_nextauth_secret.value
     nextauth_url            = data.bitwarden_secret.karakeep_nextauth_url.value
     meilisearch_master_key  = data.bitwarden_secret.karakeep_meilisearch_key.value
+    openai_api_key          = data.bitwarden_secret.karakeep_openai_api_key.value
   })
 }
