@@ -26,16 +26,18 @@ variable "portainer_endpoint_id" {
   default     = 1
 }
 
-# Docker user UID
-variable "docker_user_puid" {
-  description = "Docker user process UID"
+# Docker user UID (Bitwarden secret ID)
+variable "docker_user_puid_secret_id" {
+  description = "The Bitwarden secret ID for Docker user process UID"
   type        = string
+  sensitive   = true
 }
 
-# Docker user GID
-variable "docker_user_pgid" {
-  description = "Docker user process GID"
+# Docker user GID (Bitwarden secret ID)
+variable "docker_user_pgid_secret_id" {
+  description = "The Bitwarden secret ID for Docker user process GID"
   type        = string
+  sensitive   = true
 }
 
 # Docker timezone
@@ -55,4 +57,18 @@ variable "docker_config_path" {
 variable "docker_data_path" {
   description = "Base path for Docker container data (appdata)"
   type        = string
+}
+
+# Gluetun VPN input port (AirVPN forwarded port)
+variable "vpn_input_port_secret_id" {
+  description = "The Bitwarden secret ID for the Gluetun VPN input port"
+  type        = string
+  sensitive   = true
+}
+
+# Gluetun outbound subnet (internal network CIDR)
+variable "outbound_subnet_secret_id" {
+  description = "The Bitwarden secret ID for the Gluetun outbound subnet"
+  type        = string
+  sensitive   = true
 }
