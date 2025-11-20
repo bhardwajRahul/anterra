@@ -260,6 +260,23 @@ Home Assistant is an open-source home automation platform that provides centrali
 **Reverse Proxy Configuration**:
 The reverse proxy includes custom headers (`Host` and `X-Real-IP`) to ensure Home Assistant receives the original client IP and host information. This is essential for Home Assistant's security validation and proper functionality through the proxy.
 
+**Important - Home Assistant Trusted Proxies Configuration**:
+To allow Home Assistant to properly receive requests through the reverse proxy, you must configure the `http:` section in Home Assistant's `configuration.yaml` with trusted proxies. Add the following configuration, replacing the IP addresses with your actual reverse proxy IP(s):
+
+```yaml
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 192.168.1.50  # REPLACE THIS with the actual IP of your reverse proxy
+    - 172.16.0.0/12 # Optional: trusted subnet (often used for Docker networks)
+    - 127.0.0.1     # Optional: if the proxy is on the same machine (localhost)
+```
+
+**Configuration Details**:
+- `use_x_forwarded_for: true`: Enables Home Assistant to trust the X-Forwarded-For header from the reverse proxy
+- `trusted_proxies`: List of IP addresses/subnets that are allowed to set client IP headers
+- Without this configuration, Home Assistant may reject requests from the reverse proxy as a security measure
+
 **Configuration Files**:
 - DNS: `opentofu/cloudflare/dns_records.tofu`
 - Reverse Proxy: `ansible/playbooks/caddy/caddy_records.yaml`
