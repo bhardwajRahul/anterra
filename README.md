@@ -229,6 +229,13 @@ Finally, configure Caddy to route traffic to your new service.
     - `domain`: The fully qualified domain name (FQDN).
     - `upstream`: The IP address and port of the service.
     - Add `tls_skip_verify: true` if the upstream service uses a self-signed certificate.
+    - Add `extra_headers` if the upstream service requires original host/IP information (e.g., Home Assistant):
+      ```yaml
+      extra_headers:
+        - "Host {host}"
+        - "X-Real-IP {remote_host}"
+      ```
+      These headers ensure the upstream service receives the original client IP and host information through the proxy, which is critical for services that validate requests based on source IP or require proper host headers for functionality.
 
 3.  **Run the Caddy playbook**:
     ```bash
@@ -238,6 +245,24 @@ Finally, configure Caddy to route traffic to your new service.
 Caddy will automatically fetch a TLS certificate for the new domain and begin proxying traffic. Your new service is now live!
 
 ## Deployed Services
+
+### Home Assistant
+
+Home Assistant is an open-source home automation platform that provides centralized control for smart home devices.
+
+**Deployment Details**:
+- **URL**: https://homeassistant.ketwork.in
+- **VM Location**: Proxmox homelab
+- **DNS Management**: Cloudflare (proxied through Cloudflare CDN)
+- **Reverse Proxy**: VPS Caddy instance via Tailscale
+- **Port**: 8123 (internal)
+
+**Reverse Proxy Configuration**:
+The reverse proxy includes custom headers (`Host` and `X-Real-IP`) to ensure Home Assistant receives the original client IP and host information. This is essential for Home Assistant's security validation and proper functionality through the proxy.
+
+**Configuration Files**:
+- DNS: `opentofu/cloudflare/dns_records.tofu`
+- Reverse Proxy: `ansible/playbooks/caddy/caddy_records.yaml`
 
 ### Karakeep (Bookmark Manager)
 
