@@ -119,3 +119,10 @@ variable "karakeep_openai_api_key_secret_id" {
   type        = string
   sensitive   = true
 }
+
+# Tailscale auth key UUID (Bitwarden secret ID)
+variable "tailscale_auth_key_uuid" {
+  description = "The Bitwarden secret UUID for Tailscale auth key"
+  type        = string
+  sensitive   = true
+}

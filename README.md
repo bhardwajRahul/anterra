@@ -317,6 +317,77 @@ Karakeep is a self-hosted bookmark manager with AI-powered tagging and full-text
 
 **Important Security Note**: The stack is configured with `DISABLE_SIGNUPS=true` to prevent unauthorized account creation. Only remove this setting temporarily if you need to create additional accounts, then immediately re-enable it and redeploy.
 
+### Tailscale + AirVPN Exit Node
+
+This stack combines Gluetun VPN with Tailscale to create a secure exit node. All traffic from Tailscale clients using this exit node is routed through the AirVPN provider, providing an additional layer of privacy and security.
+
+**Stack Location**: `opentofu/portainer/compose-files/tailscale-airvpn.yaml.tpl`
+
+**Architecture**:
+- **Gluetun Container**: Handles VPN connectivity via AirVPN (WireGuard protocol)
+- **Tailscale Container**: Runs in network_mode "service:gluetun" to route all traffic through the VPN
+
+**Deployment Details**:
+- **Stack Name**: `tailscale-airvpn`
+- **Network Mode**: Both containers use the Gluetun container's network, ensuring all traffic routes through the VPN
+- **Exit Node**: Configured with `TS_EXTRA_ARGS=--advertise-exit-node` to advertise itself as an exit node to the Tailscale network
+
+**Required Bitwarden Secrets**:
+1. `tailscale_auth_key_uuid` - Tailscale authentication key UUID (generate via Tailscale admin console and store in Bitwarden)
+
+**AirVPN Certificate Setup**:
+The tailscale-airvpn stack uses separate AirVPN certificates from the regular gluetun stack:
+
+1. Generate AirVPN certificates from https://client.airvpn.org/
+2. Download in OpenVPN 2.6 format and extract `client.crt` and `client.key`
+3. Store both files as separate secrets in Bitwarden Secrets Manager
+4. Add the secret UUIDs to `ansible/inventory/group_vars/all/secrets.yaml`:
+   - `tailscale_airvpn_crt_uuid` - UUID for the Tailscale stack certificate
+   - `tailscale_airvpn_key_uuid` - UUID for the Tailscale stack key
+5. Run the certificate deployment playbook to deploy certificates to the Docker host:
+   ```bash
+   ansible-playbook -i ansible/inventory/hosts.yaml ansible/playbooks/gluetun/configure_airvpn_certificates.yaml
+   ```
+
+**Initial Setup**:
+1. Generate separate AirVPN certificates for the tailscale-airvpn stack (different from the regular gluetun stack)
+2. Add the certificate UUIDs to `ansible/inventory/group_vars/all/secrets.yaml`:
+   ```yaml
+   tailscale_airvpn_crt_uuid: "your-uuid-here"
+   tailscale_airvpn_key_uuid: "your-uuid-here"
+   ```
+3. Create a Tailscale reusable auth key in Tailscale admin console (Settings > Keys)
+4. Store the Tailscale auth key in Bitwarden Secrets Manager and note the UUID
+5. Update `opentofu/portainer/tofu.auto.tfvars`:
+   ```hcl
+   tailscale_auth_key_uuid = "your-bitwarden-uuid"
+   ```
+6. Deploy AirVPN certificates via Ansible playbook:
+   ```bash
+   ansible-playbook -i ansible/inventory/hosts.yaml ansible/playbooks/gluetun/configure_airvpn_certificates.yaml
+   ```
+7. Deploy the stack via OpenTofu:
+   ```bash
+   cd opentofu/portainer
+   tofu apply
+   ```
+8. In Portainer, restart the `gluetun-ts` container in the `tailscale-airvpn` stack
+9. Verify in container logs that "VPN connected" message appears
+10. In the Tailscale admin console:
+    - Verify the exit node is visible and online
+    - Enable it as an exit node
+11. On Tailscale clients, select this exit node in Settings to route all traffic through the VPN
+
+**Important Notes**:
+- The tailscale-airvpn stack uses **separate AirVPN certificates** from the regular gluetun stack
+- Each stack can authenticate with a different AirVPN account or certificate pair if needed
+- AirVPN certificates are deployed to the Docker host via Ansible playbook
+- Tailscale auth key is stored in Bitwarden and fetched at OpenTofu deploy time
+- The Tailscale exit node must be manually enabled in the Tailscale admin console before clients can use it
+- Container names use the suffix `-ts` to distinguish them from the regular gluetun stack (e.g., `gluetun-ts`, `tailscale-ts`)
+
+**Reference**: For detailed architecture and best practices, see [Unlock Secure Freedom: Route All Traffic Through Tailscale + Gluetun](https://fathi.me/unlock-secure-freedom-route-all-traffic-through-tailscale-gluetun/)
+
 ## Available Playbooks
 
 This section details the Ansible playbooks available in this repository.
@@ -337,7 +408,7 @@ These playbooks are intended to be run on all or most of your VMs.
 
 ### Gluetun Playbook (`playbooks/gluetun/`)
 
--   **`configure_airvpn_certificates.yaml`**: Deploys AirVPN certificates to the Docker host for the Gluetun container.
+-   **`configure_airvpn_certificates.yaml`**: Deploys AirVPN certificates to the Docker host for both the gluetun and tailscale-airvpn stacks. Manages certificates for all Gluetun containers using AirVPN.
 
 ### Proxmox VM Playbooks (`playbooks/proxmox/`)
 
@@ -437,6 +508,7 @@ anterra/
         └── compose-files/
             ├── watchtower.yaml.tpl       # Container auto-updater
             ├── gluetun.yaml.tpl          # VPN container with tunneled services
+            ├── tailscale-airvpn.yaml.tpl # Gluetun + Tailscale exit node
             └── karakeep.yaml.tpl         # Bookmark manager with AI tagging
 ```
 

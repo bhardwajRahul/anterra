@@ -50,3 +50,8 @@ data "bitwarden_secret" "karakeep_meilisearch_key" {
 data "bitwarden_secret" "karakeep_openai_api_key" {
   id = var.karakeep_openai_api_key_secret_id
 }
+
+# Fetch Tailscale auth key from Bitwarden Secrets Manager
+data "bitwarden_secret" "tailscale_auth_key" {
+  id = var.tailscale_auth_key_uuid
+}
