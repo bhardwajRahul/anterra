@@ -9,4 +9,5 @@ all:
       hosts:
         samba_share:
         mediacenter:
-        docker:
+        docker_pve:
+        docker_pve2:

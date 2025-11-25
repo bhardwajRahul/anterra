@@ -75,6 +75,10 @@
         owner: "{{ samba_user }}"
         group: "{{ samba_user }}"
         mode: '0775'
+      - path: "{{ datastore_path }}/media/pictures"
+        owner: "{{ samba_user }}"
+        group: "{{ samba_user }}"
+        mode: '0775'
 
   tasks:
     - name: Set SSH credentials for samba_share

@@ -1,63 +1,12 @@
 ---
-# Fetch Docker SSH password and Samba credentials from Bitwarden
-- name: Fetch Bitwarden Secrets
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  tags: always
-  tasks:
-    - name: Fetch Docker SSH password from Bitwarden
-      shell: bws secret get {{ docker_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
-      register: docker_ssh_password_result
-      changed_when: false
-      no_log: true
-      when: docker_ssh_password_uuid is defined
-
-    - name: Set Docker SSH password fact
-      set_fact:
-        docker_ssh_pass: "{{ (docker_ssh_password_result.stdout | from_json).value }}"
-      no_log: true
-      when:
-        - docker_ssh_password_uuid is defined
-        - docker_ssh_password_result.stdout is defined
-
-    - name: Fetch Samba user password from Bitwarden
-      shell: bws secret get {{ samba_user_password_uuid }} --access-token "{{ bws_access_token }}" --output json
-      register: samba_user_password_result
-      changed_when: false
-      no_log: true
-      when: samba_user_password_uuid is defined
-
-    - name: Set Samba user password fact
-      set_fact:
-        samba_share_password: "{{ (samba_user_password_result.stdout | from_json).value }}"
-      no_log: true
-      when:
-        - samba_user_password_uuid is defined
-        - samba_user_password_result.stdout is defined
-
-    - name: Add credentials to docker host
-      add_host:
-        name: docker
-        ansible_host: "{{ docker_ip }}"
-        ansible_user: dockeruser
-        ansible_ssh_pass: "{{ docker_ssh_pass }}"
-        ansible_become_pass: "{{ docker_ssh_pass }}"
-        samba_share_password: "{{ samba_share_password }}"
-      no_log: true
-      when:
-        - docker_ssh_pass is defined
-        - samba_share_password is defined
-
-# Install Docker, Portainer, and configure Samba mounts
-- name: Setup Docker and Portainer Server
-  hosts: docker
+# Install Docker on docker_pve host
+- name: Setup Docker Server
+  hosts: docker_pve
   become: true
   gather_facts: false
 
   vars:
     docker_user: dockeruser
-    portainer_image: "cr.portainer.io/portainer/portainer-ee:latest"
 
   tasks:
     - name: Gather facts
@@ -68,7 +17,7 @@
         update_cache: true
         cache_valid_time: 3600
 
-    # Install Docker
+    # Install Docker dependencies
     - name: Install dependencies for Docker
       apt:
         name:
@@ -77,7 +26,6 @@
           - curl
           - gnupg
           - lsb-release
-          - cifs-utils
         state: present
 
     - name: Add Docker GPG key
@@ -90,7 +38,7 @@
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
-    - name: Install Docker (version 28.0.1 for Portainer EE compatibility)
+    - name: Install Docker (version 28.0.1)
       apt:
         name:
           - docker-ce=5:28.0.1-1~ubuntu.{{ ansible_distribution_version }}~{{ ansible_lsb.codename }}
@@ -127,7 +75,7 @@
         - /mnt/docker/appdata
         - /mnt/docker/config
         - /mnt/docker/media
-        - /mnt/docker/downloads
+        - /mnt/docker/pictures
 
     # Create Samba credentials file
     - name: Create Samba credentials file
@@ -140,6 +88,7 @@
         group: root
         mode: '0600'
       no_log: true
+      when: samba_share_password is defined
 
     # Add Samba shares to fstab
     - name: Add Samba media share to fstab
@@ -148,13 +97,15 @@
         regexp: '^\S+\s+/mnt/docker/media\s+'
         line: "//{{ samba_share_ip }}/media /mnt/docker/media cifs credentials=/etc/docker-smb-credentials,uid=dockeruser,gid=dockeruser,iocharset=utf8,noperm 0 0"
         state: present
+      when: samba_share_ip is defined
 
-    - name: Add Samba downloads share to fstab
+    - name: Add Samba pictures share to fstab
       lineinfile:
         path: /etc/fstab
-        regexp: '^\S+\s+/mnt/docker/downloads\s+'
-        line: "//{{ samba_share_ip }}/downloads /mnt/docker/downloads cifs credentials=/etc/docker-smb-credentials,uid=dockeruser,gid=dockeruser,iocharset=utf8,noperm 0 0"
+        regexp: '^\S+\s+/mnt/docker/pictures\s+'
+        line: "//{{ samba_share_ip }}/media/pictures /mnt/docker/pictures cifs credentials=/etc/docker-smb-credentials,uid=dockeruser,gid=dockeruser,iocharset=utf8,noperm 0 0"
         state: present
+      when: samba_share_ip is defined
 
     - name: Mount all filesystems from fstab
       command: mount -a
@@ -162,49 +113,20 @@
       changed_when: mount_result.rc == 0 and mount_result.stdout != ""
       failed_when: false
 
-    # Install Portainer
-    - name: Create Portainer volume
-      docker_volume:
-        name: portainer_data
-
-    - name: Deploy Portainer container
-      docker_container:
-        name: portainer
-        image: "{{ portainer_image }}"
-        state: started
-        restart_policy: always
-        ports:
-          - "8000:8000"
-          - "9443:9443"
-          - "9000:9000"
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-          - portainer_data:/data
-
     - name: Verify Docker installation
       shell: docker --version
       register: docker_version
       changed_when: false
 
-    - name: Verify Portainer is running
-      shell: docker ps --filter "name=portainer" --format "{% raw %}{{.Names}}{% endraw %}"
-      register: portainer_status
-      changed_when: false
-
     - name: Output setup summary
       debug:
         msg: |
-          Docker setup complete!
+          Docker installation complete!
 
           Docker Version: {{ docker_version.stdout }}
-          Portainer Status: {{ portainer_status.stdout if portainer_status.stdout else 'Not running' }}
 
           Directories created:
           - /mnt/docker/appdata (for container app data)
           - /mnt/docker/config (for container configs)
           - /mnt/docker/media (Samba mount)
-          - /mnt/docker/downloads (Samba mount)
-
-          Access Portainer at:
-          - HTTPS: https://{{ ansible_host }}:9443
-          - HTTP: http://{{ ansible_host }}:9000
+          - /mnt/docker/pictures (Samba mount)

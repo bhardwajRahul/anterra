@@ -87,8 +87,8 @@
 
     - name: Add docker host to inventory with credentials
       add_host:
-        name: docker
-        ansible_host: "{{ docker_ip }}"
+        name: docker_pve2
+        ansible_host: "{{ docker_pve2_ip }}"
         ansible_user: dockeruser
         ansible_ssh_pass: "{{ docker_ssh_pass }}"
         ansible_become_pass: "{{ docker_ssh_pass }}"
@@ -106,7 +106,7 @@
 
 # Deploy AirVPN certificates to Docker host
 - name: Deploy AirVPN Certificates to Gluetun Stacks
-  hosts: docker
+  hosts: docker_pve2
   become: true
   gather_facts: false
 
