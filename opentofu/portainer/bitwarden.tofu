@@ -55,3 +55,8 @@ data "bitwarden_secret" "karakeep_openai_api_key" {
 data "bitwarden_secret" "tailscale_auth_key" {
   id = var.tailscale_auth_key_uuid
 }
+
+# Fetch Immich database password from Bitwarden Secrets Manager
+data "bitwarden_secret" "immich_db_password" {
+  id = var.immich_db_password_secret_id
+}

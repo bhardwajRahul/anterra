@@ -31,3 +31,9 @@ karakeep_openai_api_key_secret_id  = "a6c19765-5f3a-4fe6-ab83-b39a00e2e32f"
 
 # Bitwarden secret UUID for Tailscale auth key
 tailscale_auth_key_uuid = "201cdbb6-177f-4188-9a26-b39f002fc4a3"
+
+# Immich configuration
+immich_version               = "v2"
+immich_upload_location       = "/mnt/docker/pictures"
+immich_db_data_location      = "/mnt/docker/appdata/immich/postgres"
+immich_db_password_secret_id = "38452888-85ea-4cdb-8013-b3a3006db7d5"

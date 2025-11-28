@@ -133,3 +133,29 @@ variable "tailscale_auth_key_uuid" {
   type        = string
   sensitive   = true
 }
+
+# Immich version tag
+variable "immich_version" {
+  description = "Docker image tag for Immich (e.g., 'v2', 'v2.3.1', or 'release')"
+  type        = string
+  default     = "v2"
+}
+
+# Immich upload location (media storage)
+variable "immich_upload_location" {
+  description = "Absolute path for Immich media uploads storage"
+  type        = string
+}
+
+# Immich database data location
+variable "immich_db_data_location" {
+  description = "Absolute path for Immich PostgreSQL database storage (must be local, not network share)"
+  type        = string
+}
+
+# Immich database password (Bitwarden secret ID)
+variable "immich_db_password_secret_id" {
+  description = "The Bitwarden secret ID for Immich database password"
+  type        = string
+  sensitive   = true
+}

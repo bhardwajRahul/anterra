@@ -54,6 +54,10 @@ locals {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }
+    "immich" = {
+      content = local.vps_reverse_proxy_ip
+      proxied = true
+    }
     "keep" = {
       content = local.vps_reverse_proxy_ip
       proxied = true

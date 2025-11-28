@@ -20,13 +20,31 @@
         - docker_pve_ssh_password_uuid is defined
         - docker_pve_ssh_password_result.stdout is defined
 
+    - name: Fetch Samba user password from Bitwarden
+      shell: bws secret get "{{ samba_user_password_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: samba_user_password_result
+      changed_when: false
+      no_log: true
+      when: samba_user_password_uuid is defined
+
+    - name: Set Samba user password fact
+      set_fact:
+        samba_share_password: "{{ (samba_user_password_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - samba_user_password_uuid is defined
+        - samba_user_password_result.stdout is defined
+
     - name: Add docker_pve_ssh_password to hostvars
       add_host:
         name: docker_pve
         ansible_ssh_pass: "{{ docker_pve_ssh_password }}"
         ansible_become_pass: "{{ docker_pve_ssh_password }}"
+        samba_share_password: "{{ samba_share_password }}"
       no_log: true
-      when: docker_pve_ssh_password is defined
+      when:
+        - docker_pve_ssh_password is defined
+        - samba_share_password is defined
 
 # Install Docker on docker_pve host
 - name: Setup Docker Server
@@ -55,6 +73,7 @@
           - curl
           - gnupg
           - lsb-release
+          - cifs-utils
         state: present
 
     - name: Add Docker GPG key

@@ -60,3 +60,18 @@ resource "portainer_stack" "karakeep" {
     openai_api_key         = data.bitwarden_secret.karakeep_openai_api_key.value
   })
 }
+
+# Immich stack - self-hosted photo and video management solution
+resource "portainer_stack" "immich" {
+  name            = "immich"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/immich.yaml.tpl", {
+    docker_timezone         = var.docker_timezone
+    immich_version          = var.immich_version
+    immich_upload_location  = var.immich_upload_location
+    immich_db_data_location = var.immich_db_data_location
+    immich_db_password      = data.bitwarden_secret.immich_db_password.value
+  })
+}
