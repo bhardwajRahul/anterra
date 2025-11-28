@@ -5,7 +5,7 @@
 #
 # Prerequisites:
 # 1. airvpn_crt_uuid and airvpn_key_uuid must be defined in vault secrets
-# 2. docker_ssh_password_uuid must be defined in vault secrets
+# 2. docker_pve2_ssh_password_uuid must be defined in vault secrets
 # 3. bws_access_token must be set
 # 4. Certificate and key stored in Bitwarden Secrets Manager
 #
@@ -21,11 +21,11 @@
 
   tasks:
     - name: Fetch Docker SSH password from Bitwarden
-      shell: bws secret get {{ docker_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
+      shell: bws secret get {{ docker_pve2_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
       register: docker_ssh_password_result
       changed_when: false
       no_log: true
-      when: docker_ssh_password_uuid is defined
+      when: docker_pve2_ssh_password_uuid is defined
 
     - name: Fetch AirVPN client certificate from Bitwarden
       shell: bws secret get {{ airvpn_crt_uuid }} --access-token "{{ bws_access_token }}" --output json
@@ -60,7 +60,7 @@
         docker_ssh_pass: "{{ (docker_ssh_password_result.stdout | from_json).value }}"
       no_log: true
       when:
-        - docker_ssh_password_uuid is defined
+        - docker_pve2_ssh_password_uuid is defined
         - docker_ssh_password_result.stdout is defined
 
     - name: Set AirVPN certificate facts

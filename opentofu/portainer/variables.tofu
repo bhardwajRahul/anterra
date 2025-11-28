@@ -19,11 +19,18 @@ variable "portainer_api_key_secret_id" {
   sensitive   = true
 }
 
-# Portainer endpoint ID (typically 1 for the primary cluster/node)
-variable "portainer_endpoint_id" {
-  description = "The Portainer endpoint ID where stacks will be deployed"
+# Portainer endpoint ID for docker_pve2 environment
+variable "docker_pve2_portainer_endpoint_id" {
+  description = "The Portainer endpoint ID for docker_pve2 where stacks will be deployed"
   type        = number
-  default     = 1
+  default     = 3
+}
+
+# Portainer endpoint ID for docker_pve environment
+variable "docker_pve_portainer_endpoint_id" {
+  description = "The Portainer endpoint ID for docker_pve where stacks will be deployed"
+  type        = number
+  default     = 6
 }
 
 # Docker user UID (Bitwarden secret ID)

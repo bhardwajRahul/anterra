@@ -3,7 +3,7 @@ resource "portainer_stack" "watchtower" {
   name            = "watchtower"
   deployment_type = "standalone"
   method          = "string"
-  endpoint_id     = var.portainer_endpoint_id
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
   stack_file_content = templatefile("${path.module}/compose-files/watchtower.yaml.tpl", {
     docker_user_puid   = data.bitwarden_secret.docker_user_puid.value
     docker_user_pgid   = data.bitwarden_secret.docker_user_pgid.value
@@ -17,7 +17,7 @@ resource "portainer_stack" "gluetun" {
   name            = "gluetun"
   deployment_type = "standalone"
   method          = "string"
-  endpoint_id     = var.portainer_endpoint_id
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
   stack_file_content = templatefile("${path.module}/compose-files/gluetun.yaml.tpl", {
     docker_user_puid      = data.bitwarden_secret.docker_user_puid.value
     docker_user_pgid      = data.bitwarden_secret.docker_user_pgid.value
@@ -35,7 +35,7 @@ resource "portainer_stack" "tailscale_airvpn" {
   name            = "tailscale-airvpn"
   deployment_type = "standalone"
   method          = "string"
-  endpoint_id     = var.portainer_endpoint_id
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
   stack_file_content = templatefile("${path.module}/compose-files/tailscale-airvpn.yaml.tpl", {
     docker_config_path       = var.docker_config_path
     tailscale_auth_key_value = data.bitwarden_secret.tailscale_auth_key.value
@@ -47,7 +47,7 @@ resource "portainer_stack" "karakeep" {
   name            = "karakeep"
   deployment_type = "standalone"
   method          = "string"
-  endpoint_id     = var.portainer_endpoint_id
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
   stack_file_content = templatefile("${path.module}/compose-files/karakeep.yaml.tpl", {
     docker_user_puid       = data.bitwarden_secret.docker_user_puid.value
     docker_user_pgid       = data.bitwarden_secret.docker_user_pgid.value

@@ -452,7 +452,7 @@ The `ansible/inventory/group_vars/all/secrets.yaml` file is where you should sto
 # Bitwarden Secret IDs (UUIDs)
 # These are used to fetch the actual secrets from Bitwarden
 cloudflare_api_token_secret_id: "your-cloudflare-api-token-secret-id"
-docker_ssh_password_uuid: "your-docker-ssh-password-secret-id"
+docker_pve2_ssh_password_uuid: "your-docker-ssh-password-secret-id"
 samba_password_secret_id: "your-samba-password-secret-id"
 
 # Other Ansible-specific secrets
