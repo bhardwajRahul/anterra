@@ -17,7 +17,7 @@ This project is designed with a clear separation of concerns, leveraging the str
 
 - **OpenTofu for Infrastructure Provisioning**:
   - **Cloudflare**: Manages DNS records. All records are defined in `opentofu/cloudflare/dns_records.tofu` using a `for_each` loop, with IP addresses fetched from Bitwarden at runtime.
-  - **Portainer**: Manages container stacks. Stacks are defined as Docker Compose templates in `opentofu/portainer/compose-files/` and deployed via `portainer_stack` resources in `opentofu/portainer/stacks.tofu`.
+  - **Portainer**: Manages container stacks across multiple Docker environments. Stacks are defined as Docker Compose templates in `opentofu/portainer/compose-files/` and deployed via `portainer_stack` resources in `opentofu/portainer/stacks.tofu`. Supports multiple Portainer endpoints (e.g., `docker_pve2_portainer_endpoint_id` and `docker_pve_portainer_endpoint_id`).
 
 - **Ansible for Configuration Management**:
   - **System-level configuration**: Installs and configures software on virtual machines, including Docker, Caddy, and Tailscale.
@@ -416,8 +416,9 @@ These playbooks are designed for setting up specific types of Proxmox VMs.
 
 -   **`setup_docker_server.yaml`**:
     -   Installs Docker and Docker Compose.
-    -   Creates a `dockeruser` and sets up directories (`/mnt/docker/{appdata,config,media,downloads}`).
-    -   Installs and configures Portainer as a Docker container.
+    -   Creates a `dockeruser` and sets up directories (`/mnt/docker/{appdata,config,media,pictures}`).
+    -   Installs and configures Portainer Agent container (exposes port 9001 for remote Portainer management).
+    -   Fetches SSH password from Bitwarden for authentication (requires `docker_pve_ssh_password_uuid` in vault).
 
 -   **`setup_media_server.yaml`**:
     -   Sets up a media server, including installing any necessary software.
@@ -452,11 +453,15 @@ The `ansible/inventory/group_vars/all/secrets.yaml` file is where you should sto
 # Bitwarden Secret IDs (UUIDs)
 # These are used to fetch the actual secrets from Bitwarden
 cloudflare_api_token_secret_id: "your-cloudflare-api-token-secret-id"
-docker_pve2_ssh_password_uuid: "your-docker-ssh-password-secret-id"
+docker_pve_ssh_password_uuid: "your-docker-pve-ssh-password-secret-id"
+docker_pve2_ssh_password_uuid: "your-docker-pve2-ssh-password-secret-id"
 samba_password_secret_id: "your-samba-password-secret-id"
+bws_access_token: "your-bitwarden-access-token"
 
 # Other Ansible-specific secrets
 tailscale_auth_key: "your-tailscale-auth-key"
+tailscale_airvpn_crt_uuid: "your-tailscale-airvpn-cert-uuid"
+tailscale_airvpn_key_uuid: "your-tailscale-airvpn-key-uuid"
 ```
 
 ## Project Structure
