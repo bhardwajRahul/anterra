@@ -60,3 +60,13 @@ data "bitwarden_secret" "tailscale_auth_key" {
 data "bitwarden_secret" "immich_db_password" {
   id = var.immich_db_password_secret_id
 }
+
+# Fetch n8n database password from Bitwarden Secrets Manager
+data "bitwarden_secret" "n8n_db_password" {
+  id = var.n8n_db_password_secret_id
+}
+
+# Fetch n8n encryption key from Bitwarden Secrets Manager
+data "bitwarden_secret" "n8n_encryption_key" {
+  id = var.n8n_encryption_key_secret_id
+}

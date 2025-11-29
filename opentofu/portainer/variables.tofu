@@ -159,3 +159,36 @@ variable "immich_db_password_secret_id" {
   type        = string
   sensitive   = true
 }
+
+# n8n version tag
+variable "n8n_version" {
+  description = "Docker image tag for n8n (e.g., 'latest', '1.x.x')"
+  type        = string
+  default     = "latest"
+}
+
+# n8n data directory path
+variable "n8n_data_path" {
+  description = "Absolute path for n8n data storage (.n8n directory with credentials and workflows)"
+  type        = string
+}
+
+# n8n database data location
+variable "n8n_db_data_location" {
+  description = "Absolute path for n8n PostgreSQL database storage"
+  type        = string
+}
+
+# n8n database password (Bitwarden secret ID)
+variable "n8n_db_password_secret_id" {
+  description = "The Bitwarden secret ID for n8n database password"
+  type        = string
+  sensitive   = true
+}
+
+# n8n encryption key (Bitwarden secret ID)
+variable "n8n_encryption_key_secret_id" {
+  description = "The Bitwarden secret ID for n8n encryption key"
+  type        = string
+  sensitive   = true
+}

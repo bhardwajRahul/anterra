@@ -75,3 +75,21 @@ resource "portainer_stack" "immich" {
     immich_db_password      = data.bitwarden_secret.immich_db_password.value
   })
 }
+
+# n8n stack - workflow automation platform with PostgreSQL
+resource "portainer_stack" "n8n" {
+  name            = "n8n"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/n8n.yaml.tpl", {
+    docker_timezone        = var.docker_timezone
+    docker_user_puid      = data.bitwarden_secret.docker_user_puid.value
+    docker_user_pgid      = data.bitwarden_secret.docker_user_pgid.value
+    n8n_version            = var.n8n_version
+    n8n_data_path          = var.n8n_data_path
+    n8n_db_data_location   = var.n8n_db_data_location
+    n8n_db_password        = data.bitwarden_secret.n8n_db_password.value
+    n8n_encryption_key     = data.bitwarden_secret.n8n_encryption_key.value
+  })
+}

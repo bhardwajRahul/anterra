@@ -37,3 +37,10 @@ immich_version               = "v2"
 immich_upload_location       = "/mnt/docker/pictures"
 immich_db_data_location      = "/mnt/docker/appdata/immich/postgres"
 immich_db_password_secret_id = "38452888-85ea-4cdb-8013-b3a3006db7d5"
+
+# n8n configuration
+n8n_version                      = "latest"
+n8n_data_path                    = "/mnt/docker/appdata/n8n"
+n8n_db_data_location             = "/mnt/docker/appdata/n8n/postgres"
+n8n_db_password_secret_id        = "2ecd207d-97f8-4756-8312-b3a4006eb641"
+n8n_encryption_key_secret_id     = "c04cdd36-24f3-442b-994e-b3a4006ed76b"

@@ -21,6 +21,9 @@ locals {
     "flaresolverr" = {
       content = local.homelab_reverse_proxy_ip
     }
+    "n8n" = {
+      content = local.homelab_reverse_proxy_ip
+    }
     "portainer" = {
       content = local.homelab_reverse_proxy_ip
     }
