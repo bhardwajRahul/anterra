@@ -21,9 +21,6 @@ locals {
     "flaresolverr" = {
       content = local.homelab_reverse_proxy_ip
     }
-    "n8n" = {
-      content = local.homelab_reverse_proxy_ip
-    }
     "portainer" = {
       content = local.homelab_reverse_proxy_ip
     }
@@ -66,6 +63,10 @@ locals {
       proxied = true
     }
     "keep" = {
+      content = local.vps_reverse_proxy_ip
+      proxied = true
+    }
+    "n8n" = {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }

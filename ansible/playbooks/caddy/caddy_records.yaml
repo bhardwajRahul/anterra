@@ -9,8 +9,6 @@ internal_reverse_proxy_records:
     upstream: "http://{{ docker_pve2_ip }}:3080"
   - domain: flaresolverr.ketwork.in
     upstream: "http://{{ docker_pve2_ip }}:8191"
-  - domain: n8n.ketwork.in
-    upstream: "http://{{ docker_pve_ip }}:5678"
   - domain: portainer.ketwork.in
     upstream: "https://{{ docker_pve2_ip }}:9443"
     tls_skip_verify: true
@@ -47,6 +45,8 @@ external_reverse_proxy_records:
     upstream: "http://{{ docker_pve_ip }}:2283"
   - domain: keep.ketwork.in
     upstream: "http://{{ docker_pve2_ip }}:3000"
+  - domain: n8n.ketwork.in
+    upstream: "http://{{ docker_pve_ip }}:5678"
   - domain: plex.ketwork.in
     upstream: "{{ plex_ip }}:32400"
   - domain: seerr.ketwork.in
