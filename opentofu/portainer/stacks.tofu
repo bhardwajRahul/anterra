@@ -106,3 +106,20 @@ resource "portainer_stack" "bentopdf" {
     docker_timezone    = var.docker_timezone
   })
 }
+
+# Jotty stack - note-taking app with Cloudflare OIDC SSO
+resource "portainer_stack" "jotty" {
+  name            = "jotty"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/jotty.yaml.tpl", {
+    docker_user_puid   = data.bitwarden_secret.docker_user_puid.value
+    docker_user_pgid   = data.bitwarden_secret.docker_user_pgid.value
+    docker_timezone    = var.docker_timezone
+    docker_data_path   = var.docker_data_path
+    oidc_issuer        = data.bitwarden_secret.jotty_oidc_issuer.value
+    oidc_client_id     = data.bitwarden_secret.jotty_oidc_client_id.value
+    oidc_client_secret = data.bitwarden_secret.jotty_oidc_client_secret.value
+  })
+}

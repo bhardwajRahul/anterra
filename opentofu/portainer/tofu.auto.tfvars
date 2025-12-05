@@ -44,3 +44,8 @@ n8n_data_path                    = "/mnt/docker/appdata/n8n"
 n8n_db_data_location             = "/mnt/docker/appdata/n8n/postgres"
 n8n_db_password_secret_id        = "2ecd207d-97f8-4756-8312-b3a4006eb641"
 n8n_encryption_key_secret_id     = "c04cdd36-24f3-442b-994e-b3a4006ed76b"
+
+# Jotty configuration
+jotty_oidc_issuer_secret_id        = "0498fc2b-33dd-45f9-9c4e-b3aa004ab7c9"
+jotty_oidc_client_id_secret_id     = "a4fee8b4-703d-4b91-b186-b3aa004aceed"
+jotty_oidc_client_secret_secret_id = "2aa97515-6dc9-47a3-9d25-b3aa004af0ee"
