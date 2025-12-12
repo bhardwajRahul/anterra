@@ -47,7 +47,7 @@ Ensure you have the following software installed on your control node (the machi
 Clone this repository to your local machine:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/N28M/anterra.git
 cd anterra
 ```
 
@@ -172,7 +172,6 @@ If your new service is a Docker container, add it to the Portainer OpenTofu modu
 
     **Example `watchtower.yaml.tpl`**:
     ```yaml
-    version: '3.7'
     services:
       watchtower:
         image: containrrr/watchtower:latest
@@ -194,7 +193,7 @@ If your new service is a Docker container, add it to the Portainer OpenTofu modu
       endpoint_id = var.portainer_endpoint_id
       name        = "New Service"
       repository = {
-        url = "https://github.com/your-repo/anterra" # Or your fork
+        url = "https://github.com/N28M/anterra.git" # Or your fork
         path = "opentofu/portainer/compose-files/new-service.yaml"
         # Add git credentials if needed
       }
@@ -417,12 +416,19 @@ These playbooks are designed for setting up specific types of Proxmox VMs.
 -   **`setup_docker_server.yaml`**:
     -   Installs Docker and Docker Compose.
     -   Creates a `dockeruser` and sets up directories (`/mnt/docker/{appdata,config,media,pictures}`).
-    -   Installs and configures Portainer Agent container (exposes port 9001 for remote Portainer management).
+    -   Basic Docker host setup without Portainer.
     -   Fetches SSH password from Bitwarden for authentication (requires `docker_pve_ssh_password_uuid` in vault).
+
+-   **`setup_docker_portainer_server.yaml`**:
+    -   Extends `setup_docker_server.yaml` functionality.
+    -   Installs Docker and Docker Compose.
+    -   Creates a `dockeruser` and sets up directories.
+    -   Installs and configures Portainer Agent container (exposes port 9001 for remote Portainer management).
+    -   Fetches SSH password from Bitwarden for authentication (requires `docker_pve_ssh_password_uuid` or `docker_pve2_ssh_password_uuid` in vault).
 
 -   **`setup_media_server.yaml`**:
     -   Sets up a media server, including installing any necessary software.
-    -   *Note: This playbook is likely intended to be run on a VM with GPU passthrough for hardware transcoding.*
+    -   Intended to be run on a VM with GPU passthrough for hardware transcoding (e.g., Intel Quick Sync for Plex).
 
 -   **`setup_samba_server.yaml`**:
     -   Installs and configures a Samba server for network file sharing.
@@ -469,53 +475,66 @@ tailscale_airvpn_key_uuid: "your-tailscale-airvpn-key-uuid"
 ```
 anterra/
 ├── ansible/
-│   ├── ansible.cfg                       # Auto-configured vault password location
+│   ├── ansible.cfg                           # Auto-configured vault password location
 │   ├── inventory/
-│   │   ├── hosts.yaml                    # Target hosts
-│   │   ├── group_vars/all/secrets.yaml   # Encrypted secrets (Ansible Vault)
-│   │   └── host_vars/
-│   │       └── docker.yaml               # Docker host variables
+│   │   ├── hosts.yaml                        # Target hosts
+│   │   ├── group_vars/all/secrets.yaml       # Encrypted secrets (Ansible Vault)
+│   │   └── host_vars/                        # Host-specific variables
+│   │       ├── docker_pve.yaml
+│   │       ├── docker_pve2.yaml
+│   │       ├── mediacenter.yaml
+│   │       ├── ovh_vps.yaml
+│   │       ├── rpi.yaml
+│   │       └── samba_share.yaml
 │   ├── playbooks/
-│   │   ├── common/
-│   │   │   ├── install_opentofu.yaml
-│   │   │   ├── install_tailscale.yaml
+│   │   ├── common/                           # Playbooks for all hosts
 │   │   │   ├── install_bitwarden.yaml
-│   │   │   └── install_caddy.yaml
-│   │   ├── caddy/
+│   │   │   ├── install_caddy.yaml
+│   │   │   ├── install_opentofu.yaml
+│   │   │   └── install_tailscale.yaml
+│   │   ├── caddy/                            # Caddy reverse proxy management
+│   │   │   ├── caddy_records.yaml            # Reverse proxy record definitions
 │   │   │   ├── caddy_reverse_proxy.yaml
 │   │   │   ├── reset_caddyfile.yaml
-│   │   │   ├── caddy_records.yaml        # Reverse proxy record definitions
 │   │   │   └── templates/
 │   │   │       └── caddy_reverse_proxy.j2
-│   │   ├── gluetun/
-│   │   │   ├── README.md                 # Gluetun VPN setup guide
-│   │   │   ├── configure_airvpn_certificates.yaml
-│   │   │   └── airvpn-certs/            # AirVPN certificates (gitignored)
-│   │   └── proxmox/
-│   │       ├── setup_docker_server.yaml  # Docker server setup with Portainer
-│   │       ├── setup_media_server.yaml
-│   │       └── setup_samba_server.yaml
-│   └── vault/.vault_password             # Vault password (gitignored)
+│   │   ├── gluetun/                          # VPN configuration
+│   │   │   └── configure_airvpn_certificates.yaml
+│   │   ├── issue-fixes/                      # One-time fix playbooks
+│   │   │   ├── fix_portainer_agent_pairing.yaml
+│   │   │   └── fix_portainer_database_schema.yaml
+│   │   ├── proxmox/                          # Proxmox VM setup
+│   │   │   ├── setup_docker_portainer_server.yaml
+│   │   │   ├── setup_docker_server.yaml
+│   │   │   ├── setup_media_server.yaml
+│   │   │   └── setup_samba_server.yaml
+│   │   └── test/
+│   │       └── test_playbook.yaml
+│   └── vault/.vault_password                 # Vault password (gitignored)
+├── docs/                                     # Documentation (if needed)
 └── opentofu/
-    ├── cloudflare/                       # DNS, CDN, security
-    │   ├── providers.tofu
+    ├── cloudflare/                           # DNS, CDN, security
     │   ├── bitwarden.tofu
-    │   ├── variables.tofu
     │   ├── dns_records.tofu
     │   ├── outputs.tofu
-    │   └── tofu.auto.tfvars
-    └── portainer/                        # Container orchestration & stacks
-        ├── providers.tofu
+    │   ├── providers.tofu
+    │   ├── tofu.auto.tfvars
+    │   └── variables.tofu
+    └── portainer/                            # Container orchestration & stacks
         ├── bitwarden.tofu
-        ├── variables.tofu
+        ├── providers.tofu
         ├── stacks.tofu
         ├── tofu.auto.tfvars
+        ├── variables.tofu
         └── compose-files/
-            ├── watchtower.yaml.tpl       # Container auto-updater
-            ├── gluetun.yaml.tpl          # VPN container with tunneled services
-            ├── tailscale-airvpn.yaml.tpl # Gluetun + Tailscale exit node
-            ├── karakeep.yaml.tpl         # Bookmark manager with AI tagging
-            └── bentopdf.yaml.tpl         # Client-side PDF manipulation tool
+            ├── bentopdf.yaml.tpl             # Client-side PDF manipulation
+            ├── gluetun.yaml.tpl              # VPN container with tunneled services
+            ├── immich.yaml.tpl               # Photo management
+            ├── jotty.yaml.tpl                # Note-taking with OIDC
+            ├── karakeep.yaml.tpl             # Bookmark manager with AI tagging
+            ├── n8n.yaml.tpl                  # Workflow automation
+            ├── tailscale-airvpn.yaml.tpl     # Tailscale exit node via VPN
+            └── watchtower.yaml.tpl           # Container auto-updater
 ```
 
 ## Security
