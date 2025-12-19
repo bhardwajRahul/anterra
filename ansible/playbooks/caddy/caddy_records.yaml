@@ -28,6 +28,10 @@ internal_reverse_proxy_records:
   - domain: ui.{{ domain_name }}
     upstream: "https://{{ ui_ip }}:443"
     tls_skip_verify: true
+  - domain: papra.{{ domain_name }}
+    upstream: "http://{{ docker_pve2_ip }}:1221"
+  - domain: zerobyte.{{ domain_name }}
+    upstream: "http://{{ docker_pve2_ip }}:4096"
 
 # -------------------------------------------------------------------------
 # External Records - Handled by VPS Caddy instance (ovh_vps)

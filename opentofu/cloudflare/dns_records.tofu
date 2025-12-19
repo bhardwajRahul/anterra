@@ -45,6 +45,12 @@ locals {
     "ui" = {
       content = local.homelab_reverse_proxy_ip
     }
+    "papra" = {
+      content = local.homelab_reverse_proxy_ip
+    }
+    "zerobyte" = {
+      content = local.homelab_reverse_proxy_ip
+    }
     #----------------------------------------------------------------
     # External Records (VPS Reverse Proxy)
     # Points to VPS Caddy instance
