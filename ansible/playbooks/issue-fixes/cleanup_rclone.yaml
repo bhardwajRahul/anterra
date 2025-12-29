@@ -1,0 +1,56 @@
+---
+- name: Fetch Docker SSH Password from Bitwarden
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Fetch Docker SSH password from Bitwarden
+      shell: bws secret get {{ docker_pve2_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
+      register: docker_ssh_password_result
+      changed_when: false
+      no_log: true
+      when: docker_pve2_ssh_password_uuid is defined
+
+    - name: Set Docker SSH password fact
+      set_fact:
+        docker_ssh_pass: "{{ (docker_ssh_password_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - docker_pve2_ssh_password_uuid is defined
+        - docker_ssh_password_result.stdout is defined
+
+    - name: Add credentials to docker_pve2 host
+      add_host:
+        name: docker_pve2
+        ansible_ssh_pass: "{{ docker_ssh_pass }}"
+        ansible_become_pass: "{{ docker_ssh_pass }}"
+      no_log: true
+      when: docker_ssh_pass is defined
+
+- name: Clean Up Rclone Configuration from docker_pve2
+  hosts: docker_pve2
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Remove rclone configuration directory
+      file:
+        path: /home/dockeruser/.config/rclone
+        state: absent
+
+    - name: Remove root symlink to rclone config (if exists)
+      become: true
+      file:
+        path: /root/.config/rclone
+        state: absent
+
+    - name: Verify cleanup
+      stat:
+        path: /home/dockeruser/.config/rclone
+      register: rclone_dir_check
+
+    - name: Display cleanup status
+      debug:
+        msg: "Rclone configuration successfully removed from docker_pve2"
+      when: not rclone_dir_check.stat.exists

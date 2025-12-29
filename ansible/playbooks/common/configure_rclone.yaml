@@ -1,0 +1,231 @@
+---
+- name: Fetch Rclone Secrets from Bitwarden
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Fetch Google Drive client ID from Bitwarden
+      shell: bws secret get "{{ gdrive_client_id_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: gdrive_client_id_result
+      no_log: true
+      changed_when: false
+      when: gdrive_client_id_secret_id is defined
+
+    - name: Set Google Drive client ID fact
+      set_fact:
+        gdrive_client_id: "{{ (gdrive_client_id_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - gdrive_client_id_secret_id is defined
+        - gdrive_client_id_result.stdout is defined
+
+    - name: Fetch Google Drive client secret from Bitwarden
+      shell: bws secret get "{{ gdrive_client_secret_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: gdrive_client_secret_result
+      no_log: true
+      changed_when: false
+      when: gdrive_client_secret_secret_id is defined
+
+    - name: Set Google Drive client secret fact
+      set_fact:
+        gdrive_client_secret: "{{ (gdrive_client_secret_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - gdrive_client_secret_secret_id is defined
+        - gdrive_client_secret_result.stdout is defined
+
+    - name: Fetch Google Drive OAuth token from Bitwarden
+      shell: bws secret get "{{ gdrive_token_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: gdrive_token_result
+      no_log: true
+      changed_when: false
+      when: gdrive_token_secret_id is defined
+
+    - name: Set Google Drive OAuth token fact
+      set_fact:
+        gdrive_token: "{{ (gdrive_token_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - gdrive_token_secret_id is defined
+        - gdrive_token_result.stdout is defined
+
+    - name: Fetch OneDrive client ID from Bitwarden
+      shell: bws secret get "{{ onedrive_client_id_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: onedrive_client_id_result
+      no_log: true
+      changed_when: false
+      when: onedrive_client_id_secret_id is defined
+
+    - name: Set OneDrive client ID fact
+      set_fact:
+        onedrive_client_id: "{{ (onedrive_client_id_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - onedrive_client_id_secret_id is defined
+        - onedrive_client_id_result.stdout is defined
+
+    - name: Fetch OneDrive client secret from Bitwarden
+      shell: bws secret get "{{ onedrive_client_secret_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: onedrive_client_secret_result
+      no_log: true
+      changed_when: false
+      when: onedrive_client_secret_secret_id is defined
+
+    - name: Set OneDrive client secret fact
+      set_fact:
+        onedrive_client_secret: "{{ (onedrive_client_secret_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - onedrive_client_secret_secret_id is defined
+        - onedrive_client_secret_result.stdout is defined
+
+    - name: Fetch OneDrive OAuth token from Bitwarden
+      shell: bws secret get "{{ onedrive_token_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+      register: onedrive_token_result
+      no_log: true
+      changed_when: false
+      when: onedrive_token_secret_id is defined
+
+    - name: Set OneDrive OAuth token fact
+      set_fact:
+        onedrive_token: "{{ (onedrive_token_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - onedrive_token_secret_id is defined
+        - onedrive_token_result.stdout is defined
+
+    - name: Fetch Docker SSH password from Bitwarden
+      shell: bws secret get {{ docker_pve2_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
+      register: docker_ssh_password_result
+      changed_when: false
+      no_log: true
+      when: docker_pve2_ssh_password_uuid is defined
+
+    - name: Set Docker SSH password fact
+      set_fact:
+        docker_ssh_pass: "{{ (docker_ssh_password_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - docker_pve2_ssh_password_uuid is defined
+        - docker_ssh_password_result.stdout is defined
+
+    - name: Add credentials to docker_pve2 host
+      add_host:
+        name: docker_pve2
+        ansible_ssh_pass: "{{ docker_ssh_pass }}"
+        ansible_become_pass: "{{ docker_ssh_pass }}"
+      no_log: true
+      when: docker_ssh_pass is defined
+
+    # Dropbox configuration - commented out for later setup
+    # - name: Fetch Dropbox OAuth token from Bitwarden
+    #   shell: bws secret get "{{ dropbox_token_secret_id }}" --access-token "{{ bws_access_token }}" --output json
+    #   register: dropbox_token_result
+    #   no_log: true
+    #   changed_when: false
+    #   when: dropbox_token_secret_id is defined
+    #
+    # - name: Set Dropbox OAuth token fact
+    #   set_fact:
+    #     dropbox_token: "{{ (dropbox_token_result.stdout | from_json).value }}"
+    #   no_log: true
+    #   when:
+    #     - dropbox_token_secret_id is defined
+    #     - dropbox_token_result.stdout is defined
+
+- name: Configure Rclone with Cloud Storage Providers
+  hosts: docker_pve2
+  become: false
+  gather_facts: true
+
+  vars:
+    rclone_config_dir: "/home/dockeruser/.config/rclone"
+    rclone_config_file: "{{ rclone_config_dir }}/rclone.conf"
+    gdrive_sa_file: "{{ rclone_config_dir }}/gdrive-sa.json"
+    rclone_remotes: []
+
+  tasks:
+    - name: Check if rclone is installed
+      command: which rclone
+      register: rclone_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if rclone is not installed
+      fail:
+        msg: "Rclone is not installed. Please install rclone before running this playbook."
+      when: rclone_check.rc != 0
+
+    - name: Create rclone configuration directory
+      file:
+        path: "{{ rclone_config_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Build Google Drive remote configuration
+      set_fact:
+        rclone_remotes: "{{ rclone_remotes + [gdrive_remote] }}"
+      vars:
+        gdrive_remote: |
+          # Google Drive (OAuth with auto-renewal)
+          [googledrive]
+          type = drive
+          scope = drive
+          client_id = {{ hostvars['localhost']['gdrive_client_id'] }}
+          client_secret = {{ hostvars['localhost']['gdrive_client_secret'] }}
+          token = {{ hostvars['localhost']['gdrive_token'] }}
+      when:
+        - hostvars['localhost']['gdrive_client_id'] is defined
+        - hostvars['localhost']['gdrive_client_secret'] is defined
+        - hostvars['localhost']['gdrive_token'] is defined
+
+    - name: Build OneDrive remote configuration
+      set_fact:
+        rclone_remotes: "{{ rclone_remotes + [onedrive_remote] }}"
+      vars:
+        onedrive_remote: |
+          # OneDrive (Refresh token with auto-renewal)
+          [onedrive]
+          type = onedrive
+          client_id = {{ hostvars['localhost']['onedrive_client_id'] }}
+          client_secret = {{ hostvars['localhost']['onedrive_client_secret'] }}
+          token = {{ hostvars['localhost']['onedrive_token'] }}
+      when:
+        - hostvars['localhost']['onedrive_client_id'] is defined
+        - hostvars['localhost']['onedrive_client_secret'] is defined
+        - hostvars['localhost']['onedrive_token'] is defined
+
+    # Dropbox configuration - commented out for later setup
+    # - name: Build Dropbox remote configuration
+    #   set_fact:
+    #     rclone_remotes: "{{ rclone_remotes + [dropbox_remote] }}"
+    #   vars:
+    #     dropbox_remote: |
+    #       # Dropbox (Refresh token with auto-renewal)
+    #       [dropbox]
+    #       type = dropbox
+    #       token = {{ hostvars['localhost']['dropbox_token'] }}
+    #   when:
+    #     - hostvars['localhost']['dropbox_token'] is defined
+
+    - name: Create rclone configuration file
+      copy:
+        content: "{{ rclone_remotes | join('\n\n') }}\n"
+        dest: "{{ rclone_config_file }}"
+        mode: '0600'
+      no_log: true
+      when: rclone_remotes | length > 0
+
+    - name: Verify rclone configuration
+      command: rclone listremotes
+      register: rclone_remotes_list
+      changed_when: false
+      when: rclone_remotes | length > 0
+
+    - name: Display configured remotes
+      debug:
+        msg: "Configured rclone remotes: {{ rclone_remotes_list.stdout_lines }}"
+      when:
+        - rclone_remotes | length > 0
+        - rclone_remotes_list.stdout_lines is defined

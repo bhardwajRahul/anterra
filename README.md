@@ -472,6 +472,7 @@ These playbooks are intended to be run on all or most of your VMs.
 -   **`install_bitwarden.yaml`**: Installs the Bitwarden Secrets Manager CLI (`bws`).
 -   **`install_opentofu.yaml`**: Installs OpenTofu.
 -   **`install_tailscale.yaml`**: Installs and configures Tailscale for secure networking.
+-   **`configure_rclone.yaml`**: Configures rclone with cloud storage providers (Google Drive, OneDrive, Dropbox). Fetches credentials from Bitwarden and creates the rclone configuration file with proper permissions. Supports service account authentication for Google Drive and OAuth refresh tokens for OneDrive and Dropbox.
 
 ### Caddy Playbooks (`playbooks/caddy/`)
 
@@ -544,6 +545,15 @@ docker_pve2_ssh_password_uuid: "your-docker-pve2-ssh-password-secret-id"
 samba_password_secret_id: "your-samba-password-secret-id"
 bws_access_token: "your-bitwarden-access-token"
 
+# Rclone cloud storage secret IDs (optional - only needed if using rclone)
+gdrive_client_id_secret_id: "your-google-drive-client-id-secret-id"
+gdrive_client_secret_secret_id: "your-google-drive-client-secret-secret-id"
+gdrive_token_secret_id: "your-google-drive-oauth-token-secret-id"
+onedrive_client_id_secret_id: "your-onedrive-client-id-secret-id"
+onedrive_client_secret_secret_id: "your-onedrive-client-secret-secret-id"
+onedrive_token_secret_id: "your-onedrive-oauth-token-secret-id"
+dropbox_token_secret_id: "your-dropbox-oauth-token-secret-id"
+
 # Other Ansible-specific secrets
 tailscale_auth_key: "your-tailscale-auth-key"
 tailscale_airvpn_crt_uuid: "your-tailscale-airvpn-cert-uuid"
@@ -568,6 +578,7 @@ anterra/
 │   │       └── samba_share.yaml
 │   ├── playbooks/
 │   │   ├── common/                           # Playbooks for all hosts
+│   │   │   ├── configure_rclone.yaml
 │   │   │   ├── install_bitwarden.yaml
 │   │   │   ├── install_caddy.yaml
 │   │   │   ├── install_opentofu.yaml
