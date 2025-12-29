@@ -71,21 +71,6 @@ data "bitwarden_secret" "n8n_encryption_key" {
   id = var.n8n_encryption_key_secret_id
 }
 
-# Fetch Jotty OIDC issuer from Bitwarden Secrets Manager
-data "bitwarden_secret" "jotty_oidc_issuer" {
-  id = var.jotty_oidc_issuer_secret_id
-}
-
-# Fetch Jotty OIDC client ID from Bitwarden Secrets Manager
-data "bitwarden_secret" "jotty_oidc_client_id" {
-  id = var.jotty_oidc_client_id_secret_id
-}
-
-# Fetch Jotty OIDC client secret from Bitwarden Secrets Manager
-data "bitwarden_secret" "jotty_oidc_client_secret" {
-  id = var.jotty_oidc_client_secret_secret_id
-}
-
 # Fetch domain name from Bitwarden Secrets Manager
 data "bitwarden_secret" "domain_name" {
   id = var.domain_name_secret_id

@@ -80,10 +80,6 @@ locals {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }
-    "rw" = {
-      content = local.vps_reverse_proxy_ip
-      proxied = true
-    }
     "seerr" = {
       content = local.vps_reverse_proxy_ip
       proxied = true

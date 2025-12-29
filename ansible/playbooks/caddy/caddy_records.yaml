@@ -53,7 +53,5 @@ external_reverse_proxy_records:
     upstream: "http://{{ docker_pve_ip }}:5678"
   - domain: plex.{{ domain_name }}
     upstream: "{{ plex_ip }}:32400"
-  - domain: rw.{{ domain_name }}
-    upstream: "http://{{ docker_pve2_ip }}:9200"
   - domain: seerr.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:5055"

@@ -193,27 +193,6 @@ variable "n8n_encryption_key_secret_id" {
   sensitive   = true
 }
 
-# Jotty OIDC issuer (Bitwarden secret ID)
-variable "jotty_oidc_issuer_secret_id" {
-  description = "The Bitwarden secret ID for Jotty OIDC issuer URL"
-  type        = string
-  sensitive   = true
-}
-
-# Jotty OIDC client ID (Bitwarden secret ID)
-variable "jotty_oidc_client_id_secret_id" {
-  description = "The Bitwarden secret ID for Jotty OIDC client ID"
-  type        = string
-  sensitive   = true
-}
-
-# Jotty OIDC client secret (Bitwarden secret ID)
-variable "jotty_oidc_client_secret_secret_id" {
-  description = "The Bitwarden secret ID for Jotty OIDC client secret"
-  type        = string
-  sensitive   = true
-}
-
 # Domain name (Bitwarden secret ID)
 variable "domain_name_secret_id" {
   description = "The Bitwarden secret ID for the base domain name"
