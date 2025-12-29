@@ -436,6 +436,94 @@ Zerobyte is a backup and snapshot solution that works with rclone for cloud stor
 2. Docker host must have access to `/dev/fuse` device
 3. Bitwarden secrets configured for cloud storage providers
 
+**Obtaining OAuth Credentials**:
+
+Before running the rclone configuration playbook, you need to obtain OAuth credentials from Google and Microsoft.
+
+**Google Drive Setup**:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or use an existing one)
+3. Enable the **Google Drive API**:
+   - Navigate to "APIs & Services" > "Library"
+   - Search for "Google Drive API" and enable it
+4. Create OAuth credentials:
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth client ID"
+   - Application type: **Desktop app** (for personal use)
+   - Name it something like "rclone-homelab"
+   - Click "Create"
+5. Copy the **Client ID** and **Client Secret**
+6. Generate OAuth token (run on your local machine with rclone installed):
+   ```bash
+   rclone authorize "drive" "YOUR_CLIENT_ID" "YOUR_CLIENT_SECRET"
+   ```
+   - This opens your browser for Google authentication
+   - Grant access to Google Drive
+   - Copy the entire JSON token string returned
+7. Store in Bitwarden Secrets Manager:
+   - Secret 1: Name "Google Drive Client ID", Value: (client ID)
+   - Secret 2: Name "Google Drive Client Secret", Value: (client secret)
+   - Secret 3: Name "Google Drive OAuth Token", Value: (entire JSON token)
+8. Note the Bitwarden secret UUIDs for each secret
+
+**OneDrive Setup**:
+
+1. Go to [Azure Portal - App Registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
+2. Click "New registration"
+3. Configure the application:
+   - Name: "rclone-homelab" (or your preferred name)
+   - Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**
+   - Redirect URI: Leave blank (not needed for device code flow)
+   - Click "Register"
+4. Note the **Application (client) ID** from the Overview page
+5. Create a client secret:
+   - Go to "Certificates & secrets" > "Client secrets"
+   - Click "New client secret"
+   - Description: "rclone"
+   - Expiration: Choose your preferred duration
+   - Click "Add"
+   - Copy the **Value** (client secret) immediately
+6. **Important**: Configure supported account types via manifest:
+   - Click on "Manifest" in the left menu
+   - Find `"signInAudience"` near the top
+   - Ensure it's set to: `"signInAudience": "AzureADandPersonalMicrosoftAccount",`
+   - If not, change it and click "Save"
+   - This prevents the "invalid_request: userAudience" error during authorization
+7. Generate OAuth token (run on your local machine with rclone installed):
+   ```bash
+   rclone authorize "onedrive" "YOUR_CLIENT_ID" "YOUR_CLIENT_SECRET"
+   ```
+   - This opens your browser for Microsoft authentication
+   - Sign in with your personal Microsoft account
+   - Grant access to OneDrive
+   - Copy the entire JSON token string returned
+8. Store in Bitwarden Secrets Manager:
+   - Secret 1: Name "OneDrive Client ID", Value: (client ID)
+   - Secret 2: Name "OneDrive Client Secret", Value: (client secret)
+   - Secret 3: Name "OneDrive OAuth Token", Value: (entire JSON token)
+9. Note the Bitwarden secret UUIDs for each secret
+
+**Add Secret UUIDs to Ansible Vault**:
+
+Edit your vault secrets file and add the Bitwarden secret UUIDs:
+```bash
+ansible-vault edit ansible/inventory/group_vars/all/secrets.yaml
+```
+
+Add these variables:
+```yaml
+# Google Drive
+gdrive_client_id_secret_id: "uuid-from-bitwarden"
+gdrive_client_secret_secret_id: "uuid-from-bitwarden"
+gdrive_token_secret_id: "uuid-from-bitwarden"
+
+# OneDrive
+onedrive_client_id_secret_id: "uuid-from-bitwarden"
+onedrive_client_secret_secret_id: "uuid-from-bitwarden"
+onedrive_token_secret_id: "uuid-from-bitwarden"
+```
+
 **Setup Steps**:
 
 1. Configure rclone using the automated playbook:
