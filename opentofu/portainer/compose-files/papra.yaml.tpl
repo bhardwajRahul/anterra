@@ -6,6 +6,7 @@ services:
     environment:
       - TZ=${docker_timezone}
       - APP_BASE_URL=https://papra.${domain_name}
+      - AUTH_SECRET=${papra_auth_secret}
       - DOCUMENT_STORAGE_DRIVER=filesystem
       - DOCUMENT_STORAGE_FILESYSTEM_ROOT=/app/app-data/documents
     volumes:

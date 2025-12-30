@@ -134,9 +134,10 @@ resource "portainer_stack" "papra" {
   method          = "string"
   endpoint_id     = var.docker_pve2_portainer_endpoint_id
   stack_file_content = templatefile("${path.module}/compose-files/papra.yaml.tpl", {
-    docker_timezone    = var.docker_timezone
+    docker_timezone       = var.docker_timezone
     docker_documents_path = var.docker_documents_path
-    domain_name        = local.domain_name
+    domain_name           = local.domain_name
+    papra_auth_secret     = data.bitwarden_secret.papra_auth_secret.value
   })
 }
 
