@@ -427,17 +427,46 @@ Zerobyte is a backup and snapshot solution that works with rclone for cloud stor
 - **Container Port**: 4096
 - **Deployment Endpoint**: docker_pve2
 - **DNS Management**: Not required (backend backup service)
-- **Special Requirements**: Requires rclone configuration and FUSE device access
+- **Special Requirements**: Requires rclone configuration, FUSE device access, and USB backup drive
 
 **Stack Components**:
 - **Web**: Main Zerobyte application (ghcr.io/nicotsx/zerobyte:latest)
 - **Storage**: `/var/lib/zerobyte` for backup data
+- **Backup Repository**: `/mnt/backup` - USB drive for local backup storage (ext4 filesystem)
 - **rclone Integration**: Reads rclone configuration from `/home/dockeruser/.config/rclone`
+
+**USB Backup Drive Configuration**:
+
+The docker_pve2 host has a USB backup drive configured for local backup storage. This provides a portable disaster recovery option - the drive can be disconnected and read on any PC for emergency data recovery.
+
+**Setup**:
+1. **Hardware**: 1TB USB 3.5" HDD connected to Proxmox host (pve2)
+2. **Proxmox Configuration**: USB passthrough to docker_pve2 VM via USB Vendor/Device ID
+3. **Filesystem**: ext4 (for maximum compatibility with any Linux/Windows system)
+4. **Mount Point**: `/mnt/backup` on docker_pve2
+5. **Auto-mount**: Configured via systemd mount unit (defined in `ansible/playbooks/proxmox/setup_docker_portainer_server.yaml`)
+6. **Ownership**: dockeruser:dockeruser for container access
+7. **Partition Label**: "backup" (both filesystem and GPT partition label for easy identification)
+
+**Why ext4 instead of ZFS**:
+- Universal compatibility for disaster recovery (readable on any Linux system, Windows with ext4 drivers)
+- No special tools required (ZFS would need zfsutils-linux installed)
+- Simpler emergency access (just plug into any PC and mount)
+- Zerobyte handles encryption and integrity at the application level
+
+**Configuration in Host Vars**:
+The backup drive UUID is configured in `ansible/inventory/host_vars/docker_pve2.yaml`:
+```yaml
+backup_drive_uuid: "your-drive-uuid-here"
+```
+
+The setup playbook automatically detects if the drive is connected and mounts it. If the drive is not present, the playbook displays a helpful message and skips the mount configuration.
 
 **Prerequisites**:
 1. rclone must be installed on docker_pve2
 2. Docker host must have access to `/dev/fuse` device
 3. Bitwarden secrets configured for cloud storage providers
+4. USB backup drive configured and passed through from Proxmox host (optional but recommended)
 
 **Obtaining OAuth Credentials**:
 
@@ -611,8 +640,9 @@ These playbooks are designed for setting up specific types of Proxmox VMs.
     -   Installs Docker and Docker Compose.
     -   Creates a `dockeruser` and sets up directories.
     -   Configures systemd-managed SMB mounts with automatic failover protection (Docker stops if mounts fail).
-    -   Installs and configures Portainer Agent container (exposes port 9001 for remote Portainer management).
-    -   Fully idempotent - safe to rerun to verify or update configuration.
+    -   Configures USB backup drive mount at `/mnt/backup` (if drive is connected and `backup_drive_uuid` is defined in host_vars).
+    -   Installs and configures Portainer container for managing Docker stacks.
+    -   Fully idempotent - safe to rerun to verify or update configuration. Portainer is only deployed on first run; subsequent runs just ensure it's running without pulling new images.
     -   Fetches SSH password from Bitwarden for authentication (requires `docker_pve_ssh_password_uuid` or `docker_pve2_ssh_password_uuid` in vault).
 
 -   **`setup_media_server.yaml`**:
