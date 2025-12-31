@@ -9,6 +9,7 @@ services:
       - /var/lib/zerobyte:/var/lib/zerobyte
       - /home/dockeruser/.config/rclone:/root/.config/rclone:ro
       - ${docker_documents_path}:/mnt/documents:ro
+      - /mnt/backup:/mnt/backup
     ports:
       - "4096:4096"
     cap_add:
