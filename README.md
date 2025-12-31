@@ -430,7 +430,7 @@ Zerobyte is a backup and snapshot solution that works with rclone for cloud stor
 - **Special Requirements**: Requires rclone configuration and FUSE device access
 
 **Stack Components**:
-- **Web**: Main Zerobyte application (ghcr.io/nicotsx/zerobyte:v0.19)
+- **Web**: Main Zerobyte application (ghcr.io/nicotsx/zerobyte:latest)
 - **Storage**: `/var/lib/zerobyte` for backup data
 - **rclone Integration**: Reads rclone configuration from `/home/dockeruser/.config/rclone`
 
@@ -772,7 +772,6 @@ anterra/
             ├── bentopdf.yaml.tpl             # Client-side PDF manipulation
             ├── gluetun.yaml.tpl              # VPN container with tunneled services
             ├── immich.yaml.tpl               # Photo management
-            ├── jotty.yaml.tpl                # Note-taking with OIDC
             ├── karakeep.yaml.tpl             # Bookmark manager with AI tagging
             ├── n8n.yaml.tpl                  # Workflow automation
             ├── papra.yaml.tpl                # Document management system
