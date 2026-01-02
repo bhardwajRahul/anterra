@@ -28,8 +28,6 @@ internal_reverse_proxy_records:
   - domain: ui.{{ domain_name }}
     upstream: "https://{{ ui_ip }}:443"
     tls_skip_verify: true
-  - domain: papra.{{ domain_name }}
-    upstream: "http://{{ docker_pve2_ip }}:1221"
   - domain: zerobyte.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:4096"
 
@@ -40,6 +38,8 @@ internal_reverse_proxy_records:
 external_reverse_proxy_records:
   - domain: bento.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:9100"
+  - domain: files.{{ domain_name }}
+    upstream: "http://{{ docker_pve2_ip }}:9200"
   - domain: homeassistant.{{ domain_name }}
     upstream: "http://{{ homeassistant_ip }}:8123"
     extra_headers:

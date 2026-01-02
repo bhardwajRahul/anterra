@@ -155,6 +155,7 @@
         - /mnt/docker
         - /mnt/docker/appdata
         - /mnt/docker/config
+        - /mnt/docker/config/filebrowser
         - /mnt/docker/media
         - /mnt/docker/downloads
         - /mnt/docker/documents

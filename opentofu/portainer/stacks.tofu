@@ -127,6 +127,21 @@ resource "portainer_stack" "bentopdf" {
   })
 }
 
+# FileBrowser stack - web-based file management interface
+resource "portainer_stack" "filebrowser" {
+  name            = "filebrowser"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/filebrowser.yaml.tpl", {
+    docker_user_puid      = data.bitwarden_secret.docker_user_puid.value
+    docker_user_pgid      = data.bitwarden_secret.docker_user_pgid.value
+    docker_timezone       = var.docker_timezone
+    docker_documents_path = var.docker_documents_path
+    docker_config_path    = var.docker_config_path
+  })
+}
+
 # Zerobyte stack - backup and snapshot solution
 resource "portainer_stack" "zerobyte" {
   name            = "zerobyte"

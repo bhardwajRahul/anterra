@@ -45,9 +45,6 @@ locals {
     "ui" = {
       content = local.homelab_reverse_proxy_ip
     }
-    "papra" = {
-      content = local.homelab_reverse_proxy_ip
-    }
     "zerobyte" = {
       content = local.homelab_reverse_proxy_ip
     }
@@ -57,6 +54,10 @@ locals {
     # proxied = true (enables Cloudflare DDoS protection, caching, etc.)
     #----------------------------------------------------------------
     "bento" = {
+      content = local.vps_reverse_proxy_ip
+      proxied = true
+    }
+    "files" = {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }
