@@ -248,355 +248,29 @@ Caddy will automatically fetch a TLS certificate for the new domain and begin pr
 
 ## Deployed Services
 
-### Home Assistant
+Most services are deployed via OpenTofu Portainer stacks. See [docs/services/](docs/services/) for detailed documentation.
 
-Home Assistant is an open-source home automation platform that provides centralized control for smart home devices.
+### Home Automation
 
-**Deployment Details**:
-- **URL**: https://homeassistant.example.com
-- **VM Location**: Proxmox homelab
-- **DNS Management**: Cloudflare (proxied through Cloudflare CDN)
-- **Reverse Proxy**: VPS Caddy instance via Tailscale
-- **Port**: 8123 (internal)
+- [Home Assistant](docs/services/homeassistant.md) - Home automation platform (Proxmox VM)
 
-**Reverse Proxy Configuration**:
-The reverse proxy includes custom headers (`Host` and `X-Real-IP`) to ensure Home Assistant receives the original client IP and host information. This is essential for Home Assistant's security validation and proper functionality through the proxy.
+### Media Management
 
-**Important - Home Assistant Trusted Proxies Configuration**:
-To allow Home Assistant to properly receive requests through the reverse proxy, you must configure the `http:` section in Home Assistant's `configuration.yaml` with trusted proxies. Add the following configuration, replacing the IP addresses with your actual reverse proxy IP(s):
+- [Immich](docs/services/immich.md) - Photo and video management with AI features
+- [Karakeep](docs/services/karakeep.md) - Bookmark manager with AI tagging
+- [Zerobyte](docs/services/zerobyte.md) - Backup and snapshot solution
 
-```yaml
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 192.168.1.50  # REPLACE THIS with the actual IP of your reverse proxy
-    - 172.16.0.0/12 # Optional: trusted subnet (often used for Docker networks)
-    - 127.0.0.1     # Optional: if the proxy is on the same machine (localhost)
-```
+### Automation
 
-**Configuration Details**:
-- `use_x_forwarded_for: true`: Enables Home Assistant to trust the X-Forwarded-For header from the reverse proxy
-- `trusted_proxies`: List of IP addresses/subnets that are allowed to set client IP headers
-- Without this configuration, Home Assistant may reject requests from the reverse proxy as a security measure
+- [n8n](docs/services/n8n.md) - Workflow automation platform
+- [Watchtower](docs/services/watchtower.md) - Container auto-updater
 
-**Configuration Files**:
-- DNS: `opentofu/cloudflare/dns_records.tofu`
-- Reverse Proxy: `ansible/playbooks/caddy/caddy_records.yaml`
+### Utilities
 
-### Karakeep (Bookmark Manager)
-
-Karakeep is a self-hosted bookmark manager with AI-powered tagging and full-text search capabilities.
-
-**Deployment Details**:
-- **URL**: https://keep.example.com
-- **Stack Location**: `opentofu/portainer/compose-files/karakeep.yaml.tpl`
-- **DNS Management**: Cloudflare (proxied through Cloudflare CDN)
-- **Reverse Proxy**: VPS Caddy instance via Tailscale
-- **Port**: 3000 (internal)
-
-**Required Bitwarden Secrets**:
-1. `karakeep_nextauth_url_secret_id` - Application URL (https://keep.example.com)
-2. `karakeep_nextauth_secret_id` - NextAuth session encryption key (generate with `openssl rand -base64 36`)
-3. `karakeep_meilisearch_key_secret_id` - Meilisearch master key (generate with `openssl rand -base64 36`)
-4. `karakeep_openai_api_key_secret_id` - OpenAI API key for AI-powered automatic tagging (optional)
-
-**Stack Components**:
-- **Web**: Main Karakeep application (ghcr.io/karakeep-app/karakeep)
-- **Chrome**: Headless Chrome for web scraping and automation
-- **Meilisearch**: Full-text search engine
-
-**Initial Setup**:
-1. Deploy the stack via OpenTofu Portainer configuration
-2. Visit https://keep.example.com and create your admin account
-3. After creating your account, signups are automatically disabled (`DISABLE_SIGNUPS=true`)
-4. If you need to re-enable signups temporarily, remove the `DISABLE_SIGNUPS` environment variable from the compose template and reapply with `tofu apply`
-
-**AI Configuration**:
-- **AI Models**: Configured to use `gpt-4o-mini` for both text and image inference (cost-effective and fast)
-- **Alternative Models**: You can change the models by updating `INFERENCE_TEXT_MODEL` and `INFERENCE_IMAGE_MODEL` in the compose template
-- **Available Models**: Any OpenAI model (gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo, etc.)
-- **Ollama Support**: For local AI inference, replace `OPENAI_API_KEY` with `OLLAMA_BASE_URL` pointing to your Ollama instance
-
-**Important Security Note**: The stack is configured with `DISABLE_SIGNUPS=true` to prevent unauthorized account creation. Only remove this setting temporarily if you need to create additional accounts, then immediately re-enable it and redeploy.
-
-### Tailscale + AirVPN Exit Node
-
-This stack combines Gluetun VPN with Tailscale to create a secure exit node. All traffic from Tailscale clients using this exit node is routed through the AirVPN provider, providing an additional layer of privacy and security.
-
-**Stack Location**: `opentofu/portainer/compose-files/tailscale-airvpn.yaml.tpl`
-
-**Architecture**:
-- **Gluetun Container**: Handles VPN connectivity via AirVPN (WireGuard protocol)
-- **Tailscale Container**: Runs in network_mode "service:gluetun" to route all traffic through the VPN
-
-**Deployment Details**:
-- **Stack Name**: `tailscale-airvpn`
-- **Network Mode**: Both containers use the Gluetun container's network, ensuring all traffic routes through the VPN
-- **Exit Node**: Configured with `TS_EXTRA_ARGS=--advertise-exit-node` to advertise itself as an exit node to the Tailscale network
-
-**Required Bitwarden Secrets**:
-1. `tailscale_auth_key_uuid` - Tailscale authentication key UUID (generate via Tailscale admin console and store in Bitwarden)
-
-**AirVPN Certificate Setup**:
-The tailscale-airvpn stack uses separate AirVPN certificates from the regular gluetun stack:
-
-1. Generate AirVPN certificates from https://client.airvpn.org/
-2. Download in OpenVPN 2.6 format and extract `client.crt` and `client.key`
-3. Store both files as separate secrets in Bitwarden Secrets Manager
-4. Add the secret UUIDs to `ansible/inventory/group_vars/all/secrets.yaml`:
-   - `tailscale_airvpn_crt_uuid` - UUID for the Tailscale stack certificate
-   - `tailscale_airvpn_key_uuid` - UUID for the Tailscale stack key
-5. Run the certificate deployment playbook to deploy certificates to the Docker host:
-   ```bash
-   ansible-playbook -i ansible/inventory/hosts.yaml ansible/playbooks/gluetun/configure_airvpn_certificates.yaml
-   ```
-
-**Initial Setup**:
-1. Generate separate AirVPN certificates for the tailscale-airvpn stack (different from the regular gluetun stack)
-2. Add the certificate UUIDs to `ansible/inventory/group_vars/all/secrets.yaml`:
-   ```yaml
-   tailscale_airvpn_crt_uuid: "your-uuid-here"
-   tailscale_airvpn_key_uuid: "your-uuid-here"
-   ```
-3. Create a Tailscale reusable auth key in Tailscale admin console (Settings > Keys)
-4. Store the Tailscale auth key in Bitwarden Secrets Manager and note the UUID
-5. Update `opentofu/portainer/tofu.auto.tfvars`:
-   ```hcl
-   tailscale_auth_key_uuid = "your-bitwarden-uuid"
-   ```
-6. Deploy AirVPN certificates via Ansible playbook:
-   ```bash
-   ansible-playbook -i ansible/inventory/hosts.yaml ansible/playbooks/gluetun/configure_airvpn_certificates.yaml
-   ```
-7. Deploy the stack via OpenTofu:
-   ```bash
-   cd opentofu/portainer
-   tofu apply
-   ```
-8. In Portainer, restart the `gluetun-ts` container in the `tailscale-airvpn` stack
-9. Verify in container logs that "VPN connected" message appears
-10. In the Tailscale admin console:
-    - Verify the exit node is visible and online
-    - Enable it as an exit node
-11. On Tailscale clients, select this exit node in Settings to route all traffic through the VPN
-
-**Important Notes**:
-- The tailscale-airvpn stack uses **separate AirVPN certificates** from the regular gluetun stack
-- Each stack can authenticate with a different AirVPN account or certificate pair if needed
-- AirVPN certificates are deployed to the Docker host via Ansible playbook
-- Tailscale auth key is stored in Bitwarden and fetched at OpenTofu deploy time
-- The Tailscale exit node must be manually enabled in the Tailscale admin console before clients can use it
-- Container names use the suffix `-ts` to distinguish them from the regular gluetun stack (e.g., `gluetun-ts`, `tailscale-ts`)
-
-**Reference**: For detailed architecture and best practices, see [Unlock Secure Freedom: Route All Traffic Through Tailscale + Gluetun](https://fathi.me/unlock-secure-freedom-route-all-traffic-through-tailscale-gluetun/)
-
-### Papra (Document Management System)
-
-Papra is a self-hosted document management system for organizing, storing, and managing documents with a clean web interface.
-
-**Deployment Details**:
-- **Stack Location**: `opentofu/portainer/compose-files/papra.yaml.tpl`
-- **Container Port**: 1221
-- **Deployment Endpoint**: docker_pve2
-- **DNS Management**: Cloudflare
-- **Reverse Proxy**: Caddy instance via Tailscale
-
-**Stack Components**:
-- **Web**: Main Papra application (ghcr.io/papra-hq/papra:latest)
-- **Data Volume**: papra_data for persistent storage
-
-**Initial Setup**:
-1. Deploy the stack via OpenTofu Portainer configuration:
-   ```bash
-   cd opentofu/portainer
-   tofu apply
-   ```
-2. The application will be accessible at https://papra.your-domain.com after DNS and reverse proxy are configured
-3. Configure your document folders and upload settings through the web interface
-
-**Configuration**:
-- `TZ`: Timezone for the application
-- `APP_BASE_URL`: Application URL (automatically set to https://papra.your-domain.com)
-
-### Zerobyte (Backup and Snapshot Solution)
-
-Zerobyte is a backup and snapshot solution that works with rclone for cloud storage integration. It uses FUSE to mount and manage backups efficiently.
-
-**Deployment Details**:
-- **Stack Location**: `opentofu/portainer/compose-files/zerobyte.yaml.tpl`
-- **Container Port**: 4096
-- **Deployment Endpoint**: docker_pve2
-- **DNS Management**: Not required (backend backup service)
-- **Special Requirements**: Requires rclone configuration, FUSE device access, and USB backup drive
-
-**Stack Components**:
-- **Web**: Main Zerobyte application (ghcr.io/nicotsx/zerobyte:latest)
-- **Storage**: `/var/lib/zerobyte` for backup data
-- **Backup Repository**: `/mnt/backup` - USB drive for local backup storage (ext4 filesystem)
-- **rclone Integration**: Reads rclone configuration from `/home/dockeruser/.config/rclone`
-
-**USB Backup Drive Configuration**:
-
-The docker_pve2 host has a USB backup drive configured for local backup storage. This provides a portable disaster recovery option - the drive can be disconnected and read on any PC for emergency data recovery.
-
-**Setup**:
-1. **Hardware**: 1TB USB 3.5" HDD connected to Proxmox host (pve2)
-2. **Proxmox Configuration**: USB passthrough to docker_pve2 VM via USB Vendor/Device ID
-3. **Filesystem**: ext4 (for maximum compatibility with any Linux/Windows system)
-4. **Mount Point**: `/mnt/backup` on docker_pve2
-5. **Auto-mount**: Configured via systemd mount unit (defined in `ansible/playbooks/proxmox/setup_docker_portainer_server.yaml`)
-6. **Ownership**: dockeruser:dockeruser for container access
-7. **Partition Label**: "backup" (both filesystem and GPT partition label for easy identification)
-
-**Why ext4 instead of ZFS**:
-- Universal compatibility for disaster recovery (readable on any Linux system, Windows with ext4 drivers)
-- No special tools required (ZFS would need zfsutils-linux installed)
-- Simpler emergency access (just plug into any PC and mount)
-- Zerobyte handles encryption and integrity at the application level
-
-**Configuration in Host Vars**:
-The backup drive UUID is configured in `ansible/inventory/host_vars/docker_pve2.yaml`:
-```yaml
-backup_drive_uuid: "your-drive-uuid-here"
-```
-
-The setup playbook automatically detects if the drive is connected and mounts it. If the drive is not present, the playbook displays a helpful message and skips the mount configuration.
-
-**Prerequisites**:
-1. rclone must be installed on docker_pve2
-2. Docker host must have access to `/dev/fuse` device
-3. Bitwarden secrets configured for cloud storage providers
-4. USB backup drive configured and passed through from Proxmox host (optional but recommended)
-
-**Obtaining OAuth Credentials**:
-
-Before running the rclone configuration playbook, you need to obtain OAuth credentials from Google and Microsoft.
-
-**Google Drive Setup**:
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or use an existing one)
-3. Enable the **Google Drive API**:
-   - Navigate to "APIs & Services" > "Library"
-   - Search for "Google Drive API" and enable it
-4. Create OAuth credentials:
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "OAuth client ID"
-   - Application type: **Desktop app** (for personal use)
-   - Name it something like "rclone-homelab"
-   - Click "Create"
-5. Copy the **Client ID** and **Client Secret**
-6. Generate OAuth token (run on your local machine with rclone installed):
-   ```bash
-   rclone authorize "drive" "YOUR_CLIENT_ID" "YOUR_CLIENT_SECRET"
-   ```
-   - This opens your browser for Google authentication
-   - Grant access to Google Drive
-   - Copy the entire JSON token string returned
-7. Store in Bitwarden Secrets Manager:
-   - Secret 1: Name "Google Drive Client ID", Value: (client ID)
-   - Secret 2: Name "Google Drive Client Secret", Value: (client secret)
-   - Secret 3: Name "Google Drive OAuth Token", Value: (entire JSON token)
-8. Note the Bitwarden secret UUIDs for each secret
-
-**OneDrive Setup**:
-
-1. Go to [Azure Portal - App Registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
-2. Click "New registration"
-3. Configure the application:
-   - Name: "rclone-homelab" (or your preferred name)
-   - Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**
-   - Redirect URI: Leave blank (not needed for device code flow)
-   - Click "Register"
-4. Note the **Application (client) ID** from the Overview page
-5. Create a client secret:
-   - Go to "Certificates & secrets" > "Client secrets"
-   - Click "New client secret"
-   - Description: "rclone"
-   - Expiration: Choose your preferred duration
-   - Click "Add"
-   - Copy the **Value** (client secret) immediately
-6. **Important**: Configure supported account types via manifest:
-   - Click on "Manifest" in the left menu
-   - Find `"signInAudience"` near the top
-   - Ensure it's set to: `"signInAudience": "AzureADandPersonalMicrosoftAccount",`
-   - If not, change it and click "Save"
-   - This prevents the "invalid_request: userAudience" error during authorization
-7. Generate OAuth token (run on your local machine with rclone installed):
-   ```bash
-   rclone authorize "onedrive" "YOUR_CLIENT_ID" "YOUR_CLIENT_SECRET"
-   ```
-   - This opens your browser for Microsoft authentication
-   - Sign in with your personal Microsoft account
-   - Grant access to OneDrive
-   - Copy the entire JSON token string returned
-8. Store in Bitwarden Secrets Manager:
-   - Secret 1: Name "OneDrive Client ID", Value: (client ID)
-   - Secret 2: Name "OneDrive Client Secret", Value: (client secret)
-   - Secret 3: Name "OneDrive OAuth Token", Value: (entire JSON token)
-9. Note the Bitwarden secret UUIDs for each secret
-
-**Add Secret UUIDs to Ansible Vault**:
-
-Edit your vault secrets file and add the Bitwarden secret UUIDs:
-```bash
-ansible-vault edit ansible/inventory/group_vars/all/secrets.yaml
-```
-
-Add these variables:
-```yaml
-# Google Drive
-gdrive_client_id_secret_id: "uuid-from-bitwarden"
-gdrive_client_secret_secret_id: "uuid-from-bitwarden"
-gdrive_token_secret_id: "uuid-from-bitwarden"
-
-# OneDrive
-onedrive_client_id_secret_id: "uuid-from-bitwarden"
-onedrive_client_secret_secret_id: "uuid-from-bitwarden"
-onedrive_token_secret_id: "uuid-from-bitwarden"
-```
-
-**Setup Steps**:
-
-1. Configure rclone using the automated playbook:
-   ```bash
-   cd ansible
-   ansible-playbook -i inventory/hosts.yaml playbooks/common/configure_rclone.yaml
-   ```
-
-   This playbook automatically:
-   - Fetches OAuth credentials from Bitwarden
-   - Configures Google Drive, OneDrive (and optionally Dropbox) remotes
-   - Creates rclone configuration at `/home/dockeruser/.config/rclone`
-   - Sets proper file permissions (0600)
-
-2. Deploy the Zerobyte stack via OpenTofu:
-   ```bash
-   cd opentofu/portainer
-   tofu apply
-   ```
-
-3. Access the web interface at the configured URL
-4. Configure backup destinations and schedules through the web interface
-
-**Required Bitwarden Secrets**:
-
-For Google Drive:
-- `gdrive_client_id_secret_id` - OAuth client ID from Google Cloud Console
-- `gdrive_client_secret_secret_id` - OAuth client secret
-- `gdrive_token_secret_id` - OAuth token (from `rclone authorize "drive"`)
-
-For OneDrive:
-- `onedrive_client_id_secret_id` - Azure AD client ID
-- `onedrive_client_secret_secret_id` - Azure AD client secret
-- `onedrive_token_secret_id` - OAuth token (from `rclone authorize "onedrive"`)
-
-**Important Security Notes**:
-- The container has elevated capabilities (`SYS_ADMIN`) and FUSE device access for backup operations
-- AppArmor is set to unconfined for this container to allow FUSE operations
-- OAuth tokens are automatically refreshed by rclone
-- rclone configuration is mounted read-only into the container
-- All credentials are securely stored in Bitwarden
+- [BentoPDF](docs/services/bentopdf.md) - Client-side PDF manipulation
+- [FileBrowser](docs/services/filebrowser.md) - Web-based file management
+- [Gluetun](docs/services/gluetun.md) - VPN container with tunneled services
+- [Tailscale + AirVPN](docs/services/tailscale-airvpn.md) - Secure exit node
 
 ## Available Playbooks
 
@@ -783,7 +457,19 @@ anterra/
 │   │   └── test/
 │   │       └── test_playbook.yaml
 │   └── vault/.vault_password                 # Vault password (gitignored)
-├── docs/                                     # Documentation (if needed)
+├── docs/                                     # Service documentation
+│   ├── README.md                            # Service index
+│   └── services/                            # Individual service docs
+│       ├── bentopdf.md
+│       ├── filebrowser.md
+│       ├── gluetun.md
+│       ├── homeassistant.md
+│       ├── immich.md
+│       ├── karakeep.md
+│       ├── n8n.md
+│       ├── tailscale-airvpn.md
+│       ├── watchtower.md
+│       └── zerobyte.md
 └── opentofu/
     ├── cloudflare/                           # DNS, CDN, security
     │   ├── bitwarden.tofu
@@ -800,11 +486,11 @@ anterra/
         ├── variables.tofu
         └── compose-files/
             ├── bentopdf.yaml.tpl             # Client-side PDF manipulation
+            ├── filebrowser.yaml.tpl          # Web file management
             ├── gluetun.yaml.tpl              # VPN container with tunneled services
             ├── immich.yaml.tpl               # Photo management
             ├── karakeep.yaml.tpl             # Bookmark manager with AI tagging
             ├── n8n.yaml.tpl                  # Workflow automation
-            ├── papra.yaml.tpl                # Document management system
             ├── tailscale-airvpn.yaml.tpl     # Tailscale exit node via VPN
             ├── watchtower.yaml.tpl           # Container auto-updater
             └── zerobyte.yaml.tpl             # Backup and snapshot solution
