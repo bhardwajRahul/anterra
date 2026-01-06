@@ -156,6 +156,12 @@
         - /mnt/docker/appdata
         - /mnt/docker/config
         - /mnt/docker/config/filebrowser
+        - /mnt/docker/config/posterizarr
+        - /mnt/docker/config/posterizarr/UILogs
+        - /mnt/docker/config/posterizarr/Overlayfiles
+        - /mnt/docker/config/posterizarr/assets
+        - /mnt/docker/config/posterizarr/assetsbackup
+        - /mnt/docker/config/posterizarr/manualassets
         - /mnt/docker/media
         - /mnt/docker/downloads
         - /mnt/docker/documents

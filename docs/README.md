@@ -15,7 +15,10 @@ This directory contains detailed documentation for all deployed services in the 
 | Service | Description | Deployment |
 |---------|-------------|------------|
 | [Immich](services/immich.md) | Photo and video management with AI | docker_pve |
+| [Jellyfin](services/jellyfin.md) | Media streaming server with hardware transcoding | Proxmox VM (mediacenter) |
 | [Karakeep](services/karakeep.md) | Bookmark manager with AI tagging | docker_pve2 |
+| Plex Media Server | Media streaming server with hardware transcoding | Proxmox VM (mediacenter) |
+| [Posterizarr](services/posterizarr.md) | Automated poster maker for Plex and Jellyfin | docker_pve2 |
 | [Zerobyte](services/zerobyte.md) | Backup and snapshot solution | docker_pve2 |
 
 ### Automation
@@ -53,14 +56,17 @@ This directory contains detailed documentation for all deployed services in the 
 
 - Home Assistant (homeassistant.example.com)
 - Immich (immich.example.com) - DNS-only mode
+- Jellyfin (jellyfin.example.com) - DNS-only mode
 - Karakeep (keep.example.com)
 - n8n (n8n.example.com)
+- Plex (plex.example.com) - DNS-only mode
 - BentoPDF (bento.example.com)
 - FileBrowser (files.example.com)
 - Jellyseerr (seerr.example.com)
 
 ### Services with Internal Access Only (Homelab Reverse Proxy)
 
+- Posterizarr
 - Zerobyte
 - Gluetun stack services (Radarr, Sonarr, Prowlarr, etc.)
 

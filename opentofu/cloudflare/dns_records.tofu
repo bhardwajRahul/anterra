@@ -24,6 +24,9 @@ locals {
     "portainer" = {
       content = local.homelab_reverse_proxy_ip
     }
+    "posterizarr" = {
+      content = local.homelab_reverse_proxy_ip
+    }
     "profilarr" = {
       content = local.homelab_reverse_proxy_ip
     }
@@ -72,6 +75,11 @@ locals {
       content = local.vps_reverse_proxy_ip
       # DNS-only mode (proxied = false) to comply with Cloudflare ToS
       # Media-heavy services (photos/videos) cannot use Cloudflare proxy
+    }
+    "jellyfin" = {
+      content = local.vps_reverse_proxy_ip
+      # DNS-only mode (proxied = false) to comply with Cloudflare ToS
+      # Media streaming services cannot use Cloudflare proxy
     }
     "keep" = {
       content = local.vps_reverse_proxy_ip

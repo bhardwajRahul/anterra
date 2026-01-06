@@ -45,13 +45,14 @@
         - mediacenter_password is defined
         - samba_share_password is defined
 
-- name: Setup Plex Media Server with Intel Quick Sync Hardware Transcoding
+- name: Setup Plex and Jellyfin Media Servers with Intel Quick Sync Hardware Transcoding
   hosts: mediacenter
   become: true
   gather_facts: false
 
   vars:
     plex_user: plex
+    jellyfin_user: jellyfin
 
   tasks:
     - name: Set SSH and sudo credentials for mediacenter
@@ -131,6 +132,48 @@
         groups: video
         append: true
 
+    # Install Jellyfin Media Server
+    - name: Install apt-transport-https for Jellyfin repository
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Download and convert Jellyfin GPG key to binary format
+      shell: curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /usr/share/keyrings/jellyfin-archive-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/jellyfin-archive-keyring.gpg
+
+    - name: Set proper permissions on Jellyfin GPG key
+      file:
+        path: /usr/share/keyrings/jellyfin-archive-keyring.gpg
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Add Jellyfin repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jellyfin-archive-keyring.gpg] https://repo.jellyfin.org/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} main"
+        state: present
+        filename: jellyfin
+
+    - name: Install Jellyfin server
+      apt:
+        name: jellyfin
+        state: present
+        update_cache: true
+
+    - name: Add jellyfin user to render group for GPU access
+      user:
+        name: "{{ jellyfin_user }}"
+        groups: render
+        append: true
+
+    - name: Add jellyfin user to video group for GPU access
+      user:
+        name: "{{ jellyfin_user }}"
+        groups: video
+        append: true
+
     - name: Create media mount directories
       file:
         path: "{{ item }}"
@@ -148,14 +191,14 @@
         content: |
           username=smbuser
           password={{ samba_share_password }}
-        dest: /etc/plex-smb-credentials
+        dest: /etc/media-smb-credentials
         owner: root
         group: root
         mode: '0600'
       no_log: true
 
-    # Configure systemd mount units for SMB shares with Plex service dependencies
-    # This prevents Plex from starting when SMB shares are unavailable
+    # Configure systemd mount units for SMB shares with Plex and Jellyfin service dependencies
+    # This prevents Plex and Jellyfin from starting when SMB shares are unavailable
     - name: Create systemd mount unit for media share
       copy:
         dest: /etc/systemd/system/mnt-media.mount
@@ -165,13 +208,13 @@
           Description=SMB mount /mnt/media
           Requires=network-online.target
           After=network-online.target
-          Before=plexmediaserver.service
+          Before=plexmediaserver.service jellyfin.service
 
           [Mount]
           What=//{{ samba_share_ip }}/media
           Where=/mnt/media
           Type=cifs
-          Options=credentials=/etc/plex-smb-credentials,uid=plex,gid=plex,iocharset=utf8,noperm,_netdev,x-systemd.mount-timeout=90s
+          Options=credentials=/etc/media-smb-credentials,iocharset=utf8,noperm,_netdev,x-systemd.mount-timeout=90s
           TimeoutSec=90
 
           [Install]
@@ -187,7 +230,7 @@
           Description=Automount for /mnt/media
           Requires=network-online.target
           After=network-online.target
-          Before=plexmediaserver.service
+          Before=plexmediaserver.service jellyfin.service
 
           [Automount]
           Where=/mnt/media
@@ -205,13 +248,13 @@
           Description=SMB mount /mnt/downloads
           Requires=network-online.target
           After=network-online.target
-          Before=plexmediaserver.service
+          Before=plexmediaserver.service jellyfin.service
 
           [Mount]
           What=//{{ samba_share_ip }}/downloads
           Where=/mnt/downloads
           Type=cifs
-          Options=credentials=/etc/plex-smb-credentials,uid=plex,gid=plex,iocharset=utf8,noperm,_netdev,x-systemd.mount-timeout=90s
+          Options=credentials=/etc/media-smb-credentials,iocharset=utf8,noperm,_netdev,x-systemd.mount-timeout=90s
           TimeoutSec=90
 
           [Install]
@@ -227,7 +270,7 @@
           Description=Automount for /mnt/downloads
           Requires=network-online.target
           After=network-online.target
-          Before=plexmediaserver.service
+          Before=plexmediaserver.service jellyfin.service
 
           [Automount]
           Where=/mnt/downloads
@@ -257,6 +300,27 @@
           # This prevents Plex from accessing wrong directories when SMB is unavailable
       register: plex_override
 
+    - name: Create systemd override directory for Jellyfin service
+      file:
+        path: /etc/systemd/system/jellyfin.service.d
+        state: directory
+        mode: '0755'
+
+    - name: Configure Jellyfin service to require SMB automounts
+      copy:
+        dest: /etc/systemd/system/jellyfin.service.d/smb-mounts.conf
+        mode: '0644'
+        content: |
+          [Unit]
+          # Jellyfin service requires automount units, which manage the mounts
+          # This allows automount to control when mounts are activated
+          Requires=mnt-media.automount mnt-downloads.automount
+          After=mnt-media.automount mnt-downloads.automount
+
+          # If automounts fail, Jellyfin will not start
+          # This prevents Jellyfin from accessing wrong directories when SMB is unavailable
+      register: jellyfin_override
+
     - name: Reload systemd daemon
       systemd:
         daemon_reload: true
@@ -265,7 +329,8 @@
         automount_unit_media.changed | default(false) or
         mount_unit_downloads.changed | default(false) or
         automount_unit_downloads.changed | default(false) or
-        plex_override.changed | default(false)
+        plex_override.changed | default(false) or
+        jellyfin_override.changed | default(false)
 
     # Stop any active mount units before starting automount units
     # This prevents "Path is already a mount point" errors when automount tries to start
@@ -302,6 +367,21 @@
         enabled: true
         state: started
 
+    - name: Restart Jellyfin service to pick up mount dependencies
+      systemd:
+        name: jellyfin
+        state: restarted
+      when: >
+        jellyfin_override.changed | default(false) and
+        ansible_facts.services['jellyfin.service'] is defined and
+        ansible_facts.services['jellyfin.service'].state == 'running'
+
+    - name: Enable and start Jellyfin Media Server
+      systemd:
+        name: jellyfin
+        enabled: true
+        state: started
+
     - name: Check if UFW is installed
       command: which ufw
       register: ufw_check
@@ -312,5 +392,12 @@
       ufw:
         rule: allow
         port: '32400'
+        proto: tcp
+      when: ufw_check.rc == 0
+
+    - name: Allow Jellyfin through firewall
+      ufw:
+        rule: allow
+        port: '8096'
         proto: tcp
       when: ufw_check.rc == 0

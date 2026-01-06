@@ -257,8 +257,11 @@ Most services are deployed via OpenTofu Portainer stacks. See [docs/services/](d
 ### Media Management
 
 - [Immich](docs/services/immich.md) - Photo and video management with AI features
+- [Jellyfin](docs/services/jellyfin.md) - Media streaming server with hardware transcoding
 - [Karakeep](docs/services/karakeep.md) - Bookmark manager with AI tagging
+- [Posterizarr](docs/services/posterizarr.md) - Automated poster maker for Plex and Jellyfin
 - [Zerobyte](docs/services/zerobyte.md) - Backup and snapshot solution
+- Plex Media Server - Media streaming server with hardware transcoding (Proxmox VM)
 
 ### Automation
 
@@ -321,8 +324,9 @@ These playbooks are designed for setting up specific types of Proxmox VMs.
 
 -   **`setup_media_server.yaml`**:
     -   Configures DNS using systemd-resolved to ensure proper name resolution.
-    -   Sets up a media server with Plex Media Server.
-    -   Configures systemd-managed SMB mounts with automatic failover protection (Plex stops if mounts fail).
+    -   Sets up a media server with Plex Media Server and Jellyfin.
+    -   Configures Intel Quick Sync hardware transcoding for both Plex and Jellyfin.
+    -   Configures systemd-managed SMB mounts with automatic failover protection (services stop if mounts fail).
     -   Intended to be run on a VM with GPU passthrough for hardware transcoding (e.g., Intel Quick Sync).
     -   Fully idempotent - safe to rerun to verify or update configuration.
     -   Fetches SSH password from Bitwarden for authentication (requires `mediacenter_password_uuid` in vault).
@@ -465,8 +469,10 @@ anterra/
 │       ├── gluetun.md
 │       ├── homeassistant.md
 │       ├── immich.md
+│       ├── jellyfin.md
 │       ├── karakeep.md
 │       ├── n8n.md
+│       ├── posterizarr.md
 │       ├── tailscale-airvpn.md
 │       ├── watchtower.md
 │       └── zerobyte.md
@@ -491,6 +497,8 @@ anterra/
             ├── immich.yaml.tpl               # Photo management
             ├── karakeep.yaml.tpl             # Bookmark manager with AI tagging
             ├── n8n.yaml.tpl                  # Workflow automation
+            ├── notediscovery.yaml.tpl        # Markdown knowledge base
+            ├── posterizarr.yaml.tpl          # Automated poster maker for Plex/Jellyfin
             ├── tailscale-airvpn.yaml.tpl     # Tailscale exit node via VPN
             ├── watchtower.yaml.tpl           # Container auto-updater
             └── zerobyte.yaml.tpl             # Backup and snapshot solution
