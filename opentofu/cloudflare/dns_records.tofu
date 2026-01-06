@@ -36,6 +36,9 @@ locals {
     "qbittorrent" = {
       content = local.homelab_reverse_proxy_ip
     }
+    "qui" = {
+      content = local.homelab_reverse_proxy_ip
+    }
     "radarr" = {
       content = local.homelab_reverse_proxy_ip
     }

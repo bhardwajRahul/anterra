@@ -18,6 +18,7 @@ services:
       - "53594:53594/tcp"   # AirVPN forwarded port
       - "53594:53594/udp"   # AirVPN forwarded port
       - "8585:8585/tcp"     # qbittorrent WebUI
+      - "7476:7476/tcp"     # qui WebUI
       - "6868:6868/tcp"     # profilarr
       - "5055:5055/tcp"     # jellyseerr
       - "7878:7878/tcp"     # radarr
@@ -41,6 +42,22 @@ services:
     volumes:
       - ${docker_config_path}/qbittorrent/config:/config
       - ${docker_downloads_path}:/downloads
+    restart: always
+
+  qui:
+    image: ghcr.io/autobrr/qui:latest
+    container_name: qui
+    network_mode: "service:gluetun"
+    depends_on: [gluetun, qbittorrent]
+    environment:
+      - PUID=${docker_user_puid}
+      - PGID=${docker_user_pgid}
+      - TZ=${docker_timezone}
+      - QUI__LOG_LEVEL=INFO
+    volumes:
+      - ${docker_config_path}/qui/config:/config
+      - ${docker_downloads_path}:/downloads
+      - ${docker_media_path}:/media
     restart: always
 
   jellyseerr:

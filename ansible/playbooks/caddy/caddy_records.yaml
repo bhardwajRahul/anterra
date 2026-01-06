@@ -21,6 +21,8 @@ internal_reverse_proxy_records:
     tls_skip_verify: true
   - domain: qbittorrent.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:8585"
+  - domain: qui.{{ domain_name }}
+    upstream: "http://{{ docker_pve2_ip }}:7476"
   - domain: radarr.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:7878"
   - domain: sonarr.{{ domain_name }}
