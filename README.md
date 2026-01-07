@@ -259,7 +259,6 @@ Most services are deployed via OpenTofu Portainer stacks. See [docs/services/](d
 - [Immich](docs/services/immich.md) - Photo and video management with AI features
 - [Jellyfin](docs/services/jellyfin.md) - Media streaming server with hardware transcoding
 - [Karakeep](docs/services/karakeep.md) - Bookmark manager with AI tagging
-- [Posterizarr](docs/services/posterizarr.md) - Automated poster maker for Plex and Jellyfin
 - [Zerobyte](docs/services/zerobyte.md) - Backup and snapshot solution
 - Plex Media Server - Media streaming server with hardware transcoding (Proxmox VM)
 
@@ -472,7 +471,6 @@ anterra/
 │       ├── jellyfin.md
 │       ├── karakeep.md
 │       ├── n8n.md
-│       ├── posterizarr.md
 │       ├── tailscale-airvpn.md
 │       ├── watchtower.md
 │       └── zerobyte.md
@@ -498,7 +496,6 @@ anterra/
             ├── karakeep.yaml.tpl             # Bookmark manager with AI tagging
             ├── n8n.yaml.tpl                  # Workflow automation
             ├── notediscovery.yaml.tpl        # Markdown knowledge base
-            ├── posterizarr.yaml.tpl          # Automated poster maker for Plex/Jellyfin
             ├── tailscale-airvpn.yaml.tpl     # Tailscale exit node via VPN
             ├── watchtower.yaml.tpl           # Container auto-updater
             └── zerobyte.yaml.tpl             # Backup and snapshot solution

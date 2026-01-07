@@ -12,8 +12,6 @@ internal_reverse_proxy_records:
   - domain: portainer.{{ domain_name }}
     upstream: "https://{{ docker_pve2_ip }}:9443"
     tls_skip_verify: true
-  - domain: posterizarr.{{ domain_name }}
-    upstream: "http://{{ docker_pve2_ip }}:8219"
   - domain: profilarr.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:6868"
   - domain: prowlarr.{{ domain_name }}

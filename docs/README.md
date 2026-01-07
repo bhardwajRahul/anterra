@@ -18,7 +18,6 @@ This directory contains detailed documentation for all deployed services in the 
 | [Jellyfin](services/jellyfin.md) | Media streaming server with hardware transcoding | Proxmox VM (mediacenter) |
 | [Karakeep](services/karakeep.md) | Bookmark manager with AI tagging | docker_pve2 |
 | Plex Media Server | Media streaming server with hardware transcoding | Proxmox VM (mediacenter) |
-| [Posterizarr](services/posterizarr.md) | Automated poster maker for Plex and Jellyfin | docker_pve2 |
 | [Zerobyte](services/zerobyte.md) | Backup and snapshot solution | docker_pve2 |
 
 ### Automation
@@ -66,7 +65,6 @@ This directory contains detailed documentation for all deployed services in the 
 
 ### Services with Internal Access Only (Homelab Reverse Proxy)
 
-- Posterizarr
 - Zerobyte
 - Gluetun stack services (Radarr, Sonarr, Prowlarr, etc.)
 
