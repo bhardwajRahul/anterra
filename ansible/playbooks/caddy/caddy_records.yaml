@@ -9,6 +9,8 @@ internal_reverse_proxy_records:
     upstream: "http://{{ docker_pve2_ip }}:3080"
   - domain: flaresolverr.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:8191"
+  - domain: n8n.{{ domain_name }}
+    upstream: "http://{{ docker_pve_ip }}:5678"
   - domain: portainer.{{ domain_name }}
     upstream: "https://{{ docker_pve2_ip }}:9443"
     tls_skip_verify: true
@@ -53,8 +55,6 @@ external_reverse_proxy_records:
     upstream: "http://{{ mediacenter_ip }}:8096"
   - domain: keep.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:3000"
-  - domain: n8n.{{ domain_name }}
-    upstream: "http://{{ docker_pve_ip }}:5678"
   - domain: plex.{{ domain_name }}
     upstream: "{{ plex_ip }}:32400"
   - domain: seerr.{{ domain_name }}
