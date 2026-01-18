@@ -27,9 +27,9 @@
 }
 {% endfor %}
 {% endif %}
-{% if inventory_hostname == 'ovh_vps' %}
+{% if inventory_hostname == 'vps' %}
 # -----------------------------------------------------------
-# External Records - Handled by VPS Caddy (ovh_vps)
+# External Records - Handled by VPS Caddy (vps)
 # -----------------------------------------------------------
 {% for record in external_reverse_proxy_records %}
 {{ record.domain }} {

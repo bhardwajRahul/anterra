@@ -4,7 +4,7 @@ all:
     caddy:
       hosts:
         rpi:
-        ovh_vps:
+        vps:
     proxmox:
       hosts:
         samba_share:

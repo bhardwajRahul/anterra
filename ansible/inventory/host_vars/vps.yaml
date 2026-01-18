@@ -1,0 +1,13 @@
+---
+# Connection settings for vps host (GreenCloud VPS)
+# Note: vps_hostname should be defined in vault (hostname or IP)
+ansible_host: "{{ vps_hostname }}"
+ansible_user: root
+ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+
+# Tailscale configuration for VPS (reverse proxy client)
+# VPS only needs to accept routes to reach internal homelab services
+# It should NOT advertise routes or be an exit node
+tailscale_enable_subnet_router: false
+tailscale_enable_exit_node: false
+tailscale_subnet_routes: ""  # Override group_vars - VPS doesn't advertise routes

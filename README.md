@@ -429,7 +429,7 @@ anterra/
 │   │       ├── docker_pve.yaml
 │   │       ├── docker_pve2.yaml
 │   │       ├── mediacenter.yaml
-│   │       ├── ovh_vps.yaml
+│   │       ├── vps.yaml
 │   │       ├── rpi.yaml
 │   │       └── samba_share.yaml
 │   ├── playbooks/

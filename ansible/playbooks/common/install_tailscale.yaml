@@ -1,15 +1,48 @@
 ---
 - name: Install and Configure Tailscale
-  hosts: rpi
+  hosts: all
   become: true
   gather_facts: true
 
+  pre_tasks:
+    - name: Fetch Tailscale auth key from Bitwarden
+      shell: bws secret get "{{ tailscale_auth_key_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: tailscale_auth_key_result
+      no_log: true
+      changed_when: false
+      delegate_to: localhost
+      become: false
+      run_once: true
+      when: tailscale_auth_key_uuid is defined
+
+    - name: Set Tailscale auth key fact
+      set_fact:
+        tailscale_auth_key: "{{ (tailscale_auth_key_result.stdout | from_json).value }}"
+      no_log: true
+      run_once: true
+      delegate_to: localhost
+      when:
+        - tailscale_auth_key_uuid is defined
+        - tailscale_auth_key_result.stdout is defined
+
+    - name: Distribute auth key to all target hosts
+      set_fact:
+        tailscale_auth_key: "{{ hostvars['localhost']['tailscale_auth_key'] }}"
+      no_log: true
+      when:
+        - tailscale_auth_key_uuid is defined
+        - hostvars['localhost']['tailscale_auth_key'] is defined
+
   vars:
     automatically_update: true
-    enable_subnet_router: true
-    enable_exit_node: true
-    # tailscale_auth_key should be defined in ansible vault as a secure auth key
-    # Generate one at: https://login.tailscale.com/admin/settings/keys
+    # These can be overridden in inventory per-host
+    accept_routes: "{{ tailscale_accept_routes | default(true) }}"
+    enable_subnet_router: "{{ tailscale_enable_subnet_router | default(false) }}"
+    enable_exit_node: "{{ tailscale_enable_exit_node | default(false) }}"
+    # tailscale_auth_key_uuid should be defined in inventory (Bitwarden secret ID)
+    # tailscale_subnet_routes can be defined in inventory if advertising routes
+    # bws_access_token should be defined in ansible vault
+    # Generate auth keys at: https://login.tailscale.com/admin/settings/keys
 
   tasks:
     - name: Install Tailscale from official installer script
@@ -19,7 +52,7 @@
 
     - name: Build tailscale up command with appropriate flags
       set_fact:
-        tailscale_up_cmd: "tailscale up --reset{% if enable_subnet_router %} --accept-routes{% endif %}{% if enable_subnet_router and tailscale_subnet_routes is defined and tailscale_subnet_routes | length > 0 %} --advertise-routes={{ tailscale_subnet_routes }}{% endif %}{% if enable_exit_node %} --advertise-exit-node{% endif %}{% if tailscale_auth_key is defined %} --auth-key={{ tailscale_auth_key }}{% endif %}"
+        tailscale_up_cmd: "tailscale up --reset{% if accept_routes %} --accept-routes{% endif %}{% if enable_subnet_router and tailscale_subnet_routes is defined and tailscale_subnet_routes | length > 0 %} --advertise-routes={{ tailscale_subnet_routes }}{% endif %}{% if enable_exit_node %} --advertise-exit-node{% endif %}{% if tailscale_auth_key is defined %} --auth-key={{ tailscale_auth_key }}{% endif %}"
 
     - name: Configure Tailscale with initial setup (authenticate, exit node, subnet routes)
       shell: "{{ tailscale_up_cmd }}"

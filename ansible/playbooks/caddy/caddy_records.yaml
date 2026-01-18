@@ -36,7 +36,7 @@ internal_reverse_proxy_records:
     upstream: "http://{{ docker_pve2_ip }}:4096"
 
 # -------------------------------------------------------------------------
-# External Records - Handled by VPS Caddy instance (ovh_vps)
+# External Records - Handled by VPS Caddy instance (vps)
 # DNS proxied via Cloudflare, traffic routed through Tailscale
 # -------------------------------------------------------------------------
 external_reverse_proxy_records:
