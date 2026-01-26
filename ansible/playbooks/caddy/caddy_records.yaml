@@ -44,8 +44,6 @@ internal_reverse_proxy_records:
 # DNS proxied via Cloudflare, traffic routed through Tailscale
 # -------------------------------------------------------------------------
 external_reverse_proxy_records:
-  - domain: bento.{{ domain_name }}
-    upstream: "http://{{ docker_pve2_ip }}:9100"
   - domain: files.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:9200"
   - domain: homeassistant.{{ domain_name }}

@@ -269,7 +269,6 @@ Most services are deployed via OpenTofu Portainer stacks. See [docs/services/](d
 
 ### Utilities
 
-- [BentoPDF](docs/services/bentopdf.md) - Client-side PDF manipulation
 - [FileBrowser](docs/services/filebrowser.md) - Web-based file management
 - [Gluetun](docs/services/gluetun.md) - VPN container with tunneled services
 - [Tailscale + AirVPN](docs/services/tailscale-airvpn.md) - Secure exit node
@@ -463,7 +462,6 @@ anterra/
 ├── docs/                                     # Service documentation
 │   ├── README.md                            # Service index
 │   └── services/                            # Individual service docs
-│       ├── bentopdf.md
 │       ├── filebrowser.md
 │       ├── gluetun.md
 │       ├── homeassistant.md
@@ -489,7 +487,6 @@ anterra/
         ├── tofu.auto.tfvars
         ├── variables.tofu
         └── compose-files/
-            ├── bentopdf.yaml.tpl             # Client-side PDF manipulation
             ├── filebrowser.yaml.tpl          # Web file management
             ├── gluetun.yaml.tpl              # VPN container with tunneled services
             ├── immich.yaml.tpl               # Photo management

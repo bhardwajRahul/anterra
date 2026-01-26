@@ -122,19 +122,6 @@ resource "portainer_stack" "n8n" {
   })
 }
 
-# BentoPDF stack - client-side PDF manipulation tool
-resource "portainer_stack" "bentopdf" {
-  name            = "bentopdf"
-  deployment_type = "standalone"
-  method          = "string"
-  endpoint_id     = var.docker_pve2_portainer_endpoint_id
-  stack_file_content = templatefile("${path.module}/compose-files/bentopdf.yaml.tpl", {
-    docker_user_puid   = data.bitwarden_secret.docker_user_puid.value
-    docker_user_pgid   = data.bitwarden_secret.docker_user_pgid.value
-    docker_timezone    = var.docker_timezone
-  })
-}
-
 # FileBrowser stack - web-based file management interface
 resource "portainer_stack" "filebrowser" {
   name            = "filebrowser"

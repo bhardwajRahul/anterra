@@ -31,7 +31,6 @@ This directory contains detailed documentation for all deployed services in the 
 
 | Service | Description | Deployment |
 |---------|-------------|------------|
-| [BentoPDF](services/bentopdf.md) | Client-side PDF manipulation | docker_pve2 |
 | [FileBrowser](services/filebrowser.md) | Web-based file management | docker_pve2 |
 
 ### Networking
@@ -59,7 +58,6 @@ This directory contains detailed documentation for all deployed services in the 
 - Karakeep (keep.example.com)
 - n8n (n8n.example.com)
 - Plex (plex.example.com) - DNS-only mode
-- BentoPDF (bento.example.com)
 - FileBrowser (files.example.com)
 - Jellyseerr (seerr.example.com)
 
