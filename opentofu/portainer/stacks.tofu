@@ -179,3 +179,18 @@ resource "portainer_stack" "domain_locker" {
   })
 }
 
+# Reactive Resume stack - free and open-source resume builder
+resource "portainer_stack" "reactive_resume" {
+  name            = "reactive-resume"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/reactive-resume.yaml.tpl", {
+    docker_data_path = var.docker_data_path
+    docker_timezone  = var.docker_timezone
+    db_password      = data.bitwarden_secret.reactive_resume_db_password.value
+    auth_secret      = data.bitwarden_secret.reactive_resume_auth_secret.value
+    app_url          = data.bitwarden_secret.reactive_resume_app_url.value
+  })
+}
+

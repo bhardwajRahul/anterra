@@ -60,6 +60,9 @@ locals {
     "domain" = {
       content = local.homelab_reverse_proxy_ip
     }
+    "resume" = {
+      content = local.homelab_reverse_proxy_ip
+    }
     #----------------------------------------------------------------
     # External Records (VPS Reverse Proxy)
     # Points to VPS Caddy instance

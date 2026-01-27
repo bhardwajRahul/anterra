@@ -140,3 +140,18 @@ data "bitwarden_secret" "notediscovery_password_hash" {
 data "bitwarden_secret" "domain_locker_db_password" {
   id = var.domain_locker_db_password_secret_id
 }
+
+# Fetch Reactive Resume database password from Bitwarden Secrets Manager
+data "bitwarden_secret" "reactive_resume_db_password" {
+  id = var.reactive_resume_db_password_secret_id
+}
+
+# Fetch Reactive Resume auth secret from Bitwarden Secrets Manager
+data "bitwarden_secret" "reactive_resume_auth_secret" {
+  id = var.reactive_resume_auth_secret_secret_id
+}
+
+# Fetch Reactive Resume app URL from Bitwarden Secrets Manager
+data "bitwarden_secret" "reactive_resume_app_url" {
+  id = var.reactive_resume_app_url_secret_id
+}

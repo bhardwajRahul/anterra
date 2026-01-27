@@ -296,3 +296,24 @@ variable "domain_locker_db_password_secret_id" {
   type        = string
   sensitive   = true
 }
+
+# Reactive Resume database password (Bitwarden secret ID)
+variable "reactive_resume_db_password_secret_id" {
+  description = "The Bitwarden secret ID for Reactive Resume PostgreSQL database password"
+  type        = string
+  sensitive   = true
+}
+
+# Reactive Resume auth secret (Bitwarden secret ID)
+variable "reactive_resume_auth_secret_secret_id" {
+  description = "The Bitwarden secret ID for Reactive Resume authentication secret (generate with: openssl rand -base64 32)"
+  type        = string
+  sensitive   = true
+}
+
+# Reactive Resume app URL (Bitwarden secret ID)
+variable "reactive_resume_app_url_secret_id" {
+  description = "The Bitwarden secret ID for Reactive Resume application URL (e.g., https://resume.example.com)"
+  type        = string
+  sensitive   = true
+}
