@@ -34,8 +34,6 @@ internal_reverse_proxy_records:
   - domain: ui.{{ domain_name }}
     upstream: "https://{{ ui_ip }}:443"
     tls_skip_verify: true
-  - domain: zerobyte.{{ domain_name }}
-    upstream: "http://{{ docker_pve2_ip }}:4096"
   - domain: domain.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:3030"
   - domain: resume.{{ domain_name }}
