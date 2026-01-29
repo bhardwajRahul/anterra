@@ -128,21 +128,6 @@
         groups: docker
         append: true
 
-    # Install rclone for Zerobyte backup integration
-    - name: Install rclone
-      apt:
-        name: rclone
-        state: present
-        update_cache: true
-
-    - name: Create rclone config directory for dockeruser
-      file:
-        path: /home/{{ docker_user }}/.config/rclone
-        state: directory
-        owner: "{{ docker_user }}"
-        group: "{{ docker_user }}"
-        mode: '0700'
-
     # Create Docker data directories
     - name: Create Docker data directories
       file:
@@ -403,101 +388,6 @@
         ansible_facts.services['docker.service'] is defined and
         ansible_facts.services['docker.service'].state == 'running'
 
-    # Configure USB backup drive for Zerobyte
-    - name: Check if backup drive is connected
-      stat:
-        path: "/dev/disk/by-uuid/{{ backup_drive_uuid }}"
-      register: backup_drive_check
-      when: backup_drive_uuid is defined
-
-    - name: Set backup drive detection fact
-      set_fact:
-        backup_drive_detected: "{{ backup_drive_check.stat.exists | default(false) }}"
-      when: backup_drive_uuid is defined
-
-    - name: Display message when backup drive is not connected
-      debug:
-        msg: |
-          USB backup drive not detected. If you want to use Zerobyte for backups,
-          you can attach a USB backup drive to the Proxmox host and pass it through
-          to this VM. The drive will be automatically mounted at /mnt/backup.
-      when: >
-        backup_drive_uuid is not defined or
-        not backup_drive_detected | default(false)
-
-    - name: Create backup mount point directory
-      file:
-        path: /mnt/backup
-        state: directory
-        owner: "{{ docker_user }}"
-        group: "{{ docker_user }}"
-        mode: '0755'
-      when: >
-        backup_drive_uuid is defined and
-        backup_drive_detected | default(false)
-
-    - name: Create systemd mount unit for USB backup drive
-      copy:
-        dest: /etc/systemd/system/mnt-backup.mount
-        mode: '0644'
-        content: |
-          [Unit]
-          Description=USB Backup Drive for Zerobyte
-          After=local-fs.target
-
-          [Mount]
-          What=/dev/disk/by-uuid/{{ backup_drive_uuid }}
-          Where=/mnt/backup
-          Type=ext4
-          Options=defaults,nofail
-
-          [Install]
-          WantedBy=multi-user.target
-      register: backup_mount_unit
-      when: >
-        backup_drive_uuid is defined and
-        backup_drive_detected | default(false)
-
-    - name: Reload systemd daemon for backup mount
-      systemd:
-        daemon_reload: true
-      when: backup_mount_unit.changed | default(false)
-
-    - name: Enable and start backup drive mount
-      systemd:
-        name: mnt-backup.mount
-        enabled: true
-        state: started
-      when: >
-        backup_drive_uuid is defined and
-        backup_drive_detected | default(false)
-
-    - name: Set ownership on backup directory
-      file:
-        path: /mnt/backup
-        owner: "{{ docker_user }}"
-        group: "{{ docker_user }}"
-        mode: '0755'
-        state: directory
-      when: >
-        backup_drive_uuid is defined and
-        backup_drive_detected | default(false)
-
-    - name: Create backup subdirectories for Zerobyte
-      file:
-        path: "{{ item }}"
-        owner: "{{ docker_user }}"
-        group: "{{ docker_user }}"
-        mode: '0755'
-        state: directory
-      loop:
-        - /mnt/backup/zerobyte
-        - /mnt/backup/zerobyte/documents
-        - /mnt/backup/zerobyte/pictures
-      when: >
-        backup_drive_uuid is defined and
-        backup_drive_detected | default(false)
-
     # Install Portainer
     - name: Check if Portainer container exists
       shell: docker ps -a --filter "name=portainer" --format "{% raw %}{{.Names}}{% endraw %}"
@@ -561,7 +451,6 @@
           - /mnt/docker/downloads (Samba mount)
           - /mnt/docker/documents (Samba mount)
           - /mnt/docker/pictures (Samba mount)
-          - /mnt/backup (USB backup drive for Zerobyte)
 
           Access Portainer at:
           - HTTPS: https://{{ ansible_host }}:9443
