@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     environment:
       - QUEUED=30
-      - TIMEOUT=-1
+      - TIMEOUT=300000
       - HEALTH=true
       - CONCURRENT=20
       - TOKEN=reactive-resume-token
