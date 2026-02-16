@@ -137,20 +137,21 @@ resource "portainer_stack" "filebrowser" {
   })
 }
 
-# NoteDiscovery stack - self-hosted markdown knowledge base
-resource "portainer_stack" "notediscovery" {
-  name            = "notediscovery"
+# Jotty stack - self-hosted notes and checklists with Cloudflare Zero Trust OIDC
+resource "portainer_stack" "jotty" {
+  name            = "jotty"
   deployment_type = "standalone"
   method          = "string"
   endpoint_id     = var.docker_pve2_portainer_endpoint_id
-  stack_file_content = templatefile("${path.module}/compose-files/notediscovery.yaml.tpl", {
-    docker_user_puid            = data.bitwarden_secret.docker_user_puid.value
-    docker_user_pgid            = data.bitwarden_secret.docker_user_pgid.value
-    docker_timezone             = var.docker_timezone
-    docker_documents_path       = var.docker_documents_path
-    notediscovery_secret_key    = data.bitwarden_secret.notediscovery_secret_key.value
-    # Escape $ characters in bcrypt hash for Docker Compose ($ -> $$)
-    notediscovery_password_hash = replace(data.bitwarden_secret.notediscovery_password_hash.value, "$", "$$")
+  stack_file_content = templatefile("${path.module}/compose-files/jotty.yaml.tpl", {
+    docker_user_puid         = data.bitwarden_secret.docker_user_puid.value
+    docker_user_pgid         = data.bitwarden_secret.docker_user_pgid.value
+    docker_timezone          = var.docker_timezone
+    docker_data_path         = var.docker_data_path
+    domain_name              = local.domain_name
+    jotty_oidc_issuer        = data.bitwarden_secret.jotty_oidc_issuer.value
+    jotty_oidc_client_id     = data.bitwarden_secret.jotty_oidc_client_id.value
+    jotty_oidc_client_secret = data.bitwarden_secret.jotty_oidc_client_secret.value
   })
 }
 

@@ -267,6 +267,10 @@ Most services are deployed via OpenTofu Portainer stacks. See [docs/services/](d
 - [n8n](docs/services/n8n.md) - Workflow automation platform with Tailscale sidecar for LLM integration
 - [Watchtower](docs/services/watchtower.md) - Container auto-updater
 
+### Productivity
+
+- [Jotty](docs/services/jotty.md) - Notes and checklists with Cloudflare Zero Trust SSO
+
 ### Utilities
 
 - [FileBrowser](docs/services/filebrowser.md) - Web-based file management
@@ -492,7 +496,7 @@ anterra/
             ├── immich.yaml.tpl               # Photo management
             ├── karakeep.yaml.tpl             # Bookmark manager with AI tagging
             ├── n8n.yaml.tpl                  # Workflow automation with Tailscale sidecar
-            ├── notediscovery.yaml.tpl        # Markdown knowledge base
+            ├── jotty.yaml.tpl                # Notes and checklists with Cloudflare OIDC
             ├── tailscale-airvpn.yaml.tpl     # Tailscale exit node via VPN
             ├── watchtower.yaml.tpl           # Container auto-updater
             └── zerobyte.yaml.tpl             # Backup and snapshot solution

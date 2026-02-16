@@ -126,14 +126,19 @@ data "bitwarden_secret" "profilarr_pat" {
   id = var.profilarr_pat_secret_id
 }
 
-# Fetch NoteDiscovery secret key from Bitwarden Secrets Manager
-data "bitwarden_secret" "notediscovery_secret_key" {
-  id = var.notediscovery_secret_key_secret_id
+# Fetch Jotty OIDC issuer URL from Bitwarden Secrets Manager
+data "bitwarden_secret" "jotty_oidc_issuer" {
+  id = var.jotty_oidc_issuer_secret_id
 }
 
-# Fetch NoteDiscovery password hash from Bitwarden Secrets Manager
-data "bitwarden_secret" "notediscovery_password_hash" {
-  id = var.notediscovery_password_hash_secret_id
+# Fetch Jotty OIDC client ID from Bitwarden Secrets Manager
+data "bitwarden_secret" "jotty_oidc_client_id" {
+  id = var.jotty_oidc_client_id_secret_id
+}
+
+# Fetch Jotty OIDC client secret from Bitwarden Secrets Manager
+data "bitwarden_secret" "jotty_oidc_client_secret" {
+  id = var.jotty_oidc_client_secret_secret_id
 }
 
 # Fetch Domain Locker database password from Bitwarden Secrets Manager

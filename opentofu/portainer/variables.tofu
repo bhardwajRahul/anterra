@@ -276,16 +276,23 @@ variable "profilarr_pat_secret_id" {
   sensitive   = true
 }
 
-# NoteDiscovery secret key (Bitwarden secret ID)
-variable "notediscovery_secret_key_secret_id" {
-  description = "The Bitwarden secret ID for NoteDiscovery session secret key"
+# Jotty OIDC issuer URL (Bitwarden secret ID)
+variable "jotty_oidc_issuer_secret_id" {
+  description = "The Bitwarden secret ID for Jotty Cloudflare Zero Trust OIDC issuer URL"
   type        = string
   sensitive   = true
 }
 
-# NoteDiscovery password hash (Bitwarden secret ID)
-variable "notediscovery_password_hash_secret_id" {
-  description = "The Bitwarden secret ID for NoteDiscovery bcrypt password hash"
+# Jotty OIDC client ID (Bitwarden secret ID)
+variable "jotty_oidc_client_id_secret_id" {
+  description = "The Bitwarden secret ID for Jotty Cloudflare Zero Trust OIDC client ID"
+  type        = string
+  sensitive   = true
+}
+
+# Jotty OIDC client secret (Bitwarden secret ID)
+variable "jotty_oidc_client_secret_secret_id" {
+  description = "The Bitwarden secret ID for Jotty Cloudflare Zero Trust OIDC client secret"
   type        = string
   sensitive   = true
 }

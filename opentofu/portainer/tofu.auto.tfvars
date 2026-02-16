@@ -65,9 +65,10 @@ git_user_name_secret_id = "75c9e41b-7fba-47df-9a9e-b3be00624c2e"
 git_user_email_secret_id = "b5166a34-6849-4ab1-aa0d-b3be006292d5"
 profilarr_pat_secret_id = "bf724d98-7499-4a0e-ba3f-b3be0063bf14"
 
-# NoteDiscovery configuration
-notediscovery_secret_key_secret_id    = "24281e4c-a2f2-46d3-af67-b3c8009fffb7"
-notediscovery_password_hash_secret_id = "bd289b84-58a8-40f9-8436-b3c800a01612"
+# Jotty OIDC configuration (Cloudflare Zero Trust)
+jotty_oidc_issuer_secret_id        = "df5b2b8d-626a-45f6-a05b-b3f30010dd2f"
+jotty_oidc_client_id_secret_id     = "858bca1b-eddb-468f-ada7-b3f30010f4b1"
+jotty_oidc_client_secret_secret_id = "d89e6d9d-05e0-45bc-b809-b3f300110a8b"
 
 # Domain Locker configuration
 domain_locker_db_password_secret_id = "37c7e7b1-414c-47fa-b52b-b3db00122646"

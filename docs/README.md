@@ -20,6 +20,12 @@ This directory contains detailed documentation for all deployed services in the 
 | Plex Media Server | Media streaming server with hardware transcoding | Proxmox VM (mediacenter) |
 | [Zerobyte](services/zerobyte.md) | Backup and snapshot solution | docker_pve2 |
 
+### Productivity
+
+| Service | Description | Deployment |
+|---------|-------------|------------|
+| [Jotty](services/jotty.md) | Notes and checklists with Cloudflare Zero Trust SSO | docker_pve2 |
+
 ### Automation
 
 | Service | Description | Deployment |
@@ -60,6 +66,7 @@ This directory contains detailed documentation for all deployed services in the 
 - Plex (plex.example.com) - DNS-only mode
 - FileBrowser (files.example.com)
 - Jellyseerr (seerr.example.com)
+- Jotty (jotty.example.com)
 
 ### Services with Internal Access Only (Homelab Reverse Proxy)
 

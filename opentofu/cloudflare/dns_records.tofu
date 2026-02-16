@@ -96,7 +96,7 @@ locals {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }
-    "notes" = {
+    "jotty" = {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }

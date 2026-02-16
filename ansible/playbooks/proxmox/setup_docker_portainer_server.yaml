@@ -139,6 +139,10 @@
       loop:
         - /mnt/docker
         - /mnt/docker/appdata
+        - /mnt/docker/appdata/jotty
+        - /mnt/docker/appdata/jotty/data
+        - /mnt/docker/appdata/jotty/config
+        - /mnt/docker/appdata/jotty/cache
         - /mnt/docker/config
         - /mnt/docker/config/filebrowser
         - /mnt/docker/media
