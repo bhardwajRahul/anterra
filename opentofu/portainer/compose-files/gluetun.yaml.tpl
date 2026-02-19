@@ -27,7 +27,7 @@ services:
       - "8585:8585/tcp"     # qbittorrent WebUI
       - "7476:7476/tcp"     # qui WebUI
       - "6868:6868/tcp"     # profilarr
-      - "5055:5055/tcp"     # jellyseerr
+      - "5055:5055/tcp"     # seerr
       - "7878:7878/tcp"     # radarr
       - "9696:9696/tcp"     # prowlarr
       - "8191:8191/tcp"     # flaresolverr
@@ -67,17 +67,22 @@ services:
       - ${docker_media_path}:/media
     restart: always
 
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
+    container_name: seerr
     network_mode: "service:gluetun"
     depends_on: [gluetun]
     environment:
       - TZ=${docker_timezone}
-      - PUID=${docker_user_puid}
-      - PGID=${docker_user_pgid}
     volumes:
       - ${docker_config_path}/jellyseerr/config:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     restart: always
 
   prowlarr:

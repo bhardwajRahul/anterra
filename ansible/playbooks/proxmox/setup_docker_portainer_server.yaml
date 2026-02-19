@@ -145,10 +145,21 @@
         - /mnt/docker/appdata/jotty/cache
         - /mnt/docker/config
         - /mnt/docker/config/filebrowser
+        - /mnt/docker/config/jellyseerr
+        - /mnt/docker/config/jellyseerr/config
         - /mnt/docker/media
         - /mnt/docker/downloads
         - /mnt/docker/documents
         - /mnt/docker/pictures
+
+    # Seerr runs as node user (UID/GID 1000). Existing data from Jellyseerr was written as root,
+    # so a recursive chown is required for the container to write logs and config files.
+    - name: Set ownership on Seerr config directory recursively
+      file:
+        path: /mnt/docker/config/jellyseerr/config
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        recurse: true
 
     # Create Samba credentials file
     - name: Create Samba credentials file

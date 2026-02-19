@@ -16,7 +16,7 @@ Gluetun is a VPN container that provides a secure tunnel for multiple services. 
 |-----------|-------|------|------------|
 | gluetun | qmcgaw/gluetun:latest | - | - |
 | qbittorrent | lscr.io/linuxserver/qbittorrent | 8585 | qbittorrent |
-| jellyseerr | fallenbagel/jellyseerr | 5055 | seerr |
+| seerr | ghcr.io/seerr-team/seerr | 5055 | seerr |
 | prowlarr | lscr.io/linuxserver/prowlarr | 9696 | prowlarr |
 | flaresolverr | ghcr.io/flaresolverr/flaresolverr | 8191 | flaresolverr |
 | radarr | lscr.io/linuxserver/radarr | 7878 | radarr |
@@ -85,7 +85,7 @@ AirVPN uses WireGuard for better performance and stability compared to OpenVPN.
 - Indexer manager for Radarr/Sonarr
 - FlareSolverr integration for Cloudflare-protected sites
 
-### Jellyseerr
+### Seerr
 - Media request management
 - Accessible at `seerr.example.com`
 

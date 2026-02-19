@@ -65,7 +65,7 @@ This directory contains detailed documentation for all deployed services in the 
 - n8n (n8n.example.com)
 - Plex (plex.example.com) - DNS-only mode
 - FileBrowser (files.example.com)
-- Jellyseerr (seerr.example.com)
+- Seerr (seerr.example.com)
 - Jotty (jotty.example.com)
 
 ### Services with Internal Access Only (Homelab Reverse Proxy)
