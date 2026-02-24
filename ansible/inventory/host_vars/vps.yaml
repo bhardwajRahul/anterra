@@ -11,3 +11,4 @@ ansible_ssh_private_key_file: ~/.ssh/id_ed25519
 tailscale_enable_subnet_router: false
 tailscale_enable_exit_node: false
 tailscale_subnet_routes: ""  # Override group_vars - VPS doesn't advertise routes
+tailscale_relay_port: "40000"

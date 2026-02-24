@@ -41,6 +41,7 @@
     enable_exit_node: "{{ tailscale_enable_exit_node | default(false) }}"
     # tailscale_auth_key_uuid should be defined in inventory (Bitwarden secret ID)
     # tailscale_subnet_routes can be defined in inventory if advertising routes
+    # tailscale_relay_port can be defined in inventory to enable peer relay on that UDP port
     # bws_access_token should be defined in ansible vault
     # Generate auth keys at: https://login.tailscale.com/admin/settings/keys
 
@@ -97,6 +98,19 @@
       when: not (automatically_update | bool)
       register: auto_update_disable_result
       changed_when: "'auto-update' in auto_update_disable_result.stdout.lower()"
+
+    - name: Configure Tailscale peer relay port
+      shell: "tailscale set --relay-server-port={{ tailscale_relay_port }}"
+      when: tailscale_relay_port is defined
+      register: relay_port_result
+      changed_when: true
+
+    - name: Allow Tailscale peer relay UDP port through firewall
+      ufw:
+        rule: allow
+        port: "{{ tailscale_relay_port }}"
+        proto: udp
+      when: tailscale_relay_port is defined
 
     - name: Enable IP forwarding for subnet router (IPv4)
       sysctl:
