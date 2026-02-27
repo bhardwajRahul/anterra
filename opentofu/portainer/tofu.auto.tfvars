@@ -77,3 +77,6 @@ domain_locker_db_password_secret_id = "37c7e7b1-414c-47fa-b52b-b3db00122646"
 reactive_resume_db_password_secret_id = "7348e757-b5ec-417a-9b32-b3df00bd2e93"
 reactive_resume_auth_secret_secret_id = "1a5ec5aa-c85b-4557-a98c-b3df00bd47e5"
 reactive_resume_app_url_secret_id     = "8b53d97e-3cfd-4933-83a2-b3df00bd5a19"
+
+# Whoa Nihongo configuration
+whoa_nihongo_secret_key_secret_id = "38779934-50a7-4c10-ae5a-b3fe0054254f"

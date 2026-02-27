@@ -324,3 +324,10 @@ variable "reactive_resume_app_url_secret_id" {
   type        = string
   sensitive   = true
 }
+
+# Whoa Nihongo secret key (Bitwarden secret ID)
+variable "whoa_nihongo_secret_key_secret_id" {
+  description = "The Bitwarden secret ID for Whoa Nihongo application secret key (used for session signing)"
+  type        = string
+  sensitive   = true
+}

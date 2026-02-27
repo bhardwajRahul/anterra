@@ -167,6 +167,18 @@ resource "portainer_stack" "domain_locker" {
   })
 }
 
+# Whoa Nihongo stack - Japanese language learning web application
+resource "portainer_stack" "whoa_nihongo" {
+  name            = "whoa-nihongo"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/whoa-nihongo.yaml.tpl", {
+    docker_data_path = var.docker_data_path
+    secret_key       = data.bitwarden_secret.whoa_nihongo_secret_key.value
+  })
+}
+
 # Reactive Resume stack - free and open-source resume builder
 resource "portainer_stack" "reactive_resume" {
   name            = "reactive-resume"

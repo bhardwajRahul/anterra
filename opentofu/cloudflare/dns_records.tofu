@@ -100,6 +100,10 @@ locals {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }
+    "wonihongo" = {
+      content = local.vps_reverse_proxy_ip
+      proxied = true
+    }
   }
 }
 

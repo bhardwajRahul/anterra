@@ -160,3 +160,8 @@ data "bitwarden_secret" "reactive_resume_auth_secret" {
 data "bitwarden_secret" "reactive_resume_app_url" {
   id = var.reactive_resume_app_url_secret_id
 }
+
+# Fetch Whoa Nihongo secret key from Bitwarden Secrets Manager
+data "bitwarden_secret" "whoa_nihongo_secret_key" {
+  id = var.whoa_nihongo_secret_key_secret_id
+}
