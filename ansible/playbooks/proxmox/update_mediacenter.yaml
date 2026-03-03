@@ -1,0 +1,155 @@
+---
+- name: Fetch Bitwarden Secrets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Fetch mediauser password from Bitwarden
+      shell: bws secret get {{ mediacenter_password_uuid }} --access-token "{{ bws_access_token }}" --output json
+      register: mediauser_password_result
+      changed_when: false
+      no_log: true
+      when: mediacenter_password_uuid is defined
+
+    - name: Set mediauser password fact
+      set_fact:
+        mediacenter_password: "{{ (mediauser_password_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - mediacenter_password_uuid is defined
+        - mediauser_password_result.stdout is defined
+
+    - name: Add password to mediacenter host
+      add_host:
+        name: mediacenter
+        mediacenter_password: "{{ mediacenter_password }}"
+      no_log: true
+      when: mediacenter_password is defined
+
+- name: Update mediacenter system, Plex, and Jellyfin
+  hosts: mediacenter
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Set SSH and sudo credentials for mediacenter
+      set_fact:
+        ansible_ssh_pass: "{{ mediacenter_password }}"
+        ansible_become_pass: "{{ mediacenter_password }}"
+      no_log: true
+
+    - name: Gather facts
+      setup:
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    # Full system upgrade
+    - name: Upgrade all system packages
+      apt:
+        upgrade: dist
+      register: system_upgrade
+
+    - name: Remove unused packages
+      apt:
+        autoremove: true
+
+    # Plex update
+    # The Plex apt repo sometimes lags behind the latest release. We query the Plex
+    # download API directly and install the .deb if apt does not have the latest version.
+    - name: Get currently installed Plex version
+      shell: dpkg-query -W -f='${Version}' plexmediaserver 2>/dev/null || echo "not installed"
+      register: plex_version_before
+      changed_when: false
+
+    - name: Query Plex download API for latest version
+      uri:
+        url: https://plex.tv/api/downloads/5.json
+        return_content: true
+      register: plex_api_response
+      delegate_to: localhost
+      become: false
+
+    - name: Set Plex latest version and download URL facts
+      set_fact:
+        plex_latest_version: "{{ (plex_api_response.content | from_json).computer.Linux.version }}"
+        plex_deb_url: >-
+          {{ ((plex_api_response.content | from_json).computer.Linux.releases
+            | selectattr('build', 'equalto', 'linux-' + ansible_architecture)
+            | selectattr('distro', 'equalto', 'debian')
+            | list | first).url }}
+
+    - name: Install latest Plex from direct download if apt repo is behind
+      block:
+        - name: Download Plex .deb package
+          get_url:
+            url: "{{ plex_deb_url }}"
+            dest: /tmp/plexmediaserver.deb
+            mode: '0644'
+
+        - name: Install Plex .deb package
+          apt:
+            deb: /tmp/plexmediaserver.deb
+
+        - name: Remove downloaded Plex .deb
+          file:
+            path: /tmp/plexmediaserver.deb
+            state: absent
+      # Only download if the API version is not already reflected in the installed version.
+      # Plex versions look like "1.42.2.10156-f737b826c" so we match on the numeric prefix.
+      when: plex_latest_version.split('-')[0] not in plex_version_before.stdout
+
+    - name: Get Plex version after upgrade
+      shell: dpkg-query -W -f='${Version}' plexmediaserver 2>/dev/null || echo "not installed"
+      register: plex_version_after
+      changed_when: false
+
+    - name: Report Plex update result
+      debug:
+        msg: >-
+          {% if plex_version_before.stdout != plex_version_after.stdout %}
+          Plex updated: {{ plex_version_before.stdout }} -> {{ plex_version_after.stdout }}
+          {% else %}
+          Plex already at latest: {{ plex_version_after.stdout }}
+          {% endif %}
+
+    # Jellyfin update
+    - name: Get Jellyfin version before upgrade
+      shell: dpkg-query -W -f='${Version}' jellyfin 2>/dev/null || echo "not installed"
+      register: jellyfin_version_before
+      changed_when: false
+
+    - name: Upgrade Jellyfin
+      apt:
+        name: jellyfin
+        state: latest
+      register: jellyfin_upgrade
+
+    - name: Get Jellyfin version after upgrade
+      shell: dpkg-query -W -f='${Version}' jellyfin 2>/dev/null || echo "not installed"
+      register: jellyfin_version_after
+      changed_when: false
+
+    - name: Report Jellyfin update result
+      debug:
+        msg: >-
+          {% if jellyfin_upgrade.changed %}
+          Jellyfin updated: {{ jellyfin_version_before.stdout }} -> {{ jellyfin_version_after.stdout }}
+          {% else %}
+          Jellyfin already at latest: {{ jellyfin_version_after.stdout }}
+          {% endif %}
+
+    # Ensure services are running after updates
+    - name: Ensure Plex Media Server is running
+      systemd:
+        name: plexmediaserver
+        state: started
+        enabled: true
+
+    - name: Ensure Jellyfin is running
+      systemd:
+        name: jellyfin
+        state: started
+        enabled: true
