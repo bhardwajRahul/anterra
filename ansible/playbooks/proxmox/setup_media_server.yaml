@@ -78,6 +78,15 @@
         state: link
         force: true
 
+    # Replace regional Ubuntu mirror with the official mirror if present.
+    # Some VMs are provisioned with geographic mirrors (e.g. in.archive.ubuntu.com)
+    # that may become unreachable or stop hosting Release files for LTS releases.
+    - name: Replace regional Ubuntu mirror with official mirror in sources.list
+      replace:
+        path: /etc/apt/sources.list
+        regexp: 'http://[a-z]{2}\.archive\.ubuntu\.com'
+        replace: 'http://archive.ubuntu.com'
+
     - name: Update apt cache
       apt:
         update_cache: true
