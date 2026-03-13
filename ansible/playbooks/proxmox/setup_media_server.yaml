@@ -81,16 +81,106 @@
     # Replace regional Ubuntu mirror with the official mirror if present.
     # Some VMs are provisioned with geographic mirrors (e.g. in.archive.ubuntu.com)
     # that may become unreachable or stop hosting Release files for LTS releases.
+    # Ubuntu 24.04+ uses DEB822 format in ubuntu.sources; older releases use sources.list.
     - name: Replace regional Ubuntu mirror with official mirror in sources.list
       replace:
         path: /etc/apt/sources.list
         regexp: 'http://[a-z]{2}\.archive\.ubuntu\.com'
         replace: 'http://archive.ubuntu.com'
 
+    - name: Replace regional Ubuntu mirror with official mirror in ubuntu.sources (DEB822 format)
+      replace:
+        path: /etc/apt/sources.list.d/ubuntu.sources
+        regexp: 'http://[a-z]{2}\.archive\.ubuntu\.com'
+        replace: 'http://archive.ubuntu.com'
+      failed_when: false
+
+    # Remove ALL legacy repository configuration before any apt operations.
+    # This prevents broken repos from causing warnings/errors during apt cache updates.
+    - name: Remove old Plex GPG key
+      file:
+        path: /usr/share/keyrings/plexmediaserver.asc
+        state: absent
+
+    - name: Remove old Plex sources list
+      file:
+        path: /etc/apt/sources.list.d/plexmediaserver.list
+        state: absent
+
+    - name: Remove old Jellyfin GPG key
+      file:
+        path: /usr/share/keyrings/jellyfin-archive-keyring.gpg
+        state: absent
+
+    - name: Remove old Jellyfin sources list
+      file:
+        path: /etc/apt/sources.list.d/jellyfin.list
+        state: absent
+
+    # Set up all repositories before running any apt operations.
+    - name: Ensure /etc/apt/keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    # Plex now uses a v2 GPG key stored in /etc/apt/keyrings per updated repository setup docs
+    # https://support.plex.tv/articles/235974187-enable-repository-updating-for-supported-linux-server-distributions/
+    # Using get_url + separate dearmor instead of curl|gpg pipe, because the pipe
+    # creates an empty output file on network failure, which then blocks retries via creates:.
+    - name: Download Plex v2 GPG signing key
+      get_url:
+        url: https://downloads.plex.tv/plex-keys/PlexSign.v2.key
+        dest: /etc/apt/keyrings/plexmediaserver.v2.asc
+        mode: '0644'
+      retries: 3
+      delay: 5
+      register: plex_key_download
+
+    - name: Dearmor Plex v2 GPG key
+      shell: gpg --yes --dearmor -o /etc/apt/keyrings/plexmediaserver.v2.gpg /etc/apt/keyrings/plexmediaserver.v2.asc
+      changed_when: plex_key_download.changed
+
+    - name: Add Plex repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/plexmediaserver.v2.gpg] https://repo.plex.tv/deb/ public main"
+        state: present
+        filename: plexmediaserver
+        update_cache: false
+
+    # Jellyfin now uses DEB822 format and stores the key in /etc/apt/keyrings/
+    # https://repo.jellyfin.org/install-debuntu.sh
+    - name: Download Jellyfin GPG signing key
+      get_url:
+        url: https://repo.jellyfin.org/jellyfin_team.gpg.key
+        dest: /etc/apt/keyrings/jellyfin.asc
+        mode: '0644'
+      retries: 3
+      delay: 5
+      register: jellyfin_key_download
+
+    - name: Dearmor Jellyfin GPG key
+      shell: gpg --yes --dearmor -o /etc/apt/keyrings/jellyfin.gpg /etc/apt/keyrings/jellyfin.asc
+      changed_when: jellyfin_key_download.changed
+
+    - name: Add Jellyfin repository in DEB822 format
+      copy:
+        dest: /etc/apt/sources.list.d/jellyfin.sources
+        mode: '0644'
+        owner: root
+        group: root
+        content: |
+          Types: deb
+          URIs: https://repo.jellyfin.org/{{ ansible_distribution | lower }}
+          Suites: {{ ansible_distribution_release }}
+          Components: main
+          Architectures: {{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}
+          Signed-By: /etc/apt/keyrings/jellyfin.gpg
+
+    # All repositories are now configured. Run apt update once and install packages.
     - name: Update apt cache
       apt:
         update_cache: true
-        cache_valid_time: 3600
 
     - name: Install Intel GPU drivers and required packages
       apt:
@@ -111,23 +201,10 @@
       changed_when: false
       failed_when: false
 
-    - name: Download Plex GPG key
-      get_url:
-        url: https://downloads.plex.tv/plex-keys/PlexSign.key
-        dest: /usr/share/keyrings/plexmediaserver.asc
-        mode: '0644'
-
-    - name: Add Plex repository
-      apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/plexmediaserver.asc] https://downloads.plex.tv/repo/deb public main"
-        state: present
-        filename: plexmediaserver
-
     - name: Install Plex Media Server
       apt:
         name: plexmediaserver
         state: present
-        update_cache: true
 
     - name: Add plex user to render group for GPU access
       user:
@@ -141,35 +218,10 @@
         groups: video
         append: true
 
-    # Install Jellyfin Media Server
-    - name: Install apt-transport-https for Jellyfin repository
-      apt:
-        name: apt-transport-https
-        state: present
-
-    - name: Download and convert Jellyfin GPG key to binary format
-      shell: curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /usr/share/keyrings/jellyfin-archive-keyring.gpg
-      args:
-        creates: /usr/share/keyrings/jellyfin-archive-keyring.gpg
-
-    - name: Set proper permissions on Jellyfin GPG key
-      file:
-        path: /usr/share/keyrings/jellyfin-archive-keyring.gpg
-        mode: '0644'
-        owner: root
-        group: root
-
-    - name: Add Jellyfin repository
-      apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/jellyfin-archive-keyring.gpg] https://repo.jellyfin.org/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} main"
-        state: present
-        filename: jellyfin
-
     - name: Install Jellyfin server
       apt:
         name: jellyfin
         state: present
-        update_cache: true
 
     - name: Add jellyfin user to render group for GPU access
       user:
