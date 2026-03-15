@@ -15,6 +15,7 @@ services:
       - WIREGUARD_PRESHARED_KEY=${wireguard_preshared_key}
       - WIREGUARD_ADDRESSES=${wireguard_addresses}
       - SERVER_COUNTRIES=Netherlands,United States,Japan,New Zealand
+      - FIREWALL_VPN_INPUT_PORTS=${vpn_input_port}
       - FIREWALL_OUTBOUND_SUBNETS=${outbound_subnet},100.64.0.0/10
       - DOT_BLOCK_MALICIOUS=on
       - DOT_BLOCK_ADS=on

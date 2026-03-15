@@ -60,6 +60,7 @@ resource "portainer_stack" "tailscale_airvpn" {
   endpoint_id     = var.docker_pve2_portainer_endpoint_id
   stack_file_content = templatefile("${path.module}/compose-files/tailscale-airvpn.yaml.tpl", {
     docker_config_path       = var.docker_config_path
+    vpn_input_port           = data.bitwarden_secret.vpn_input_port.value
     outbound_subnet          = data.bitwarden_secret.outbound_subnet.value
     tailscale_auth_key_value = data.bitwarden_secret.tailscale_auth_key.value
     wireguard_private_key    = data.bitwarden_secret.ts_wireguard_private_key.value
