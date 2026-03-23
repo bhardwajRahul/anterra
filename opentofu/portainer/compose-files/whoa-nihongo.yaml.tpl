@@ -10,7 +10,7 @@ services:
     environment:
       - SECRET_KEY=${secret_key}
       - DB_PATH=/app/data/nihongo.db
-      - SESSION_EXPIRY_HOURS=168
+      - SESSION_EXPIRY_HOURS=24
     networks:
       - whoa-nihongo
 
