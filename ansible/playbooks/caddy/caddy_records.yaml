@@ -63,5 +63,7 @@ external_reverse_proxy_records:
     upstream: "http://{{ docker_pve2_ip }}:5055"
   - domain: jotty.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:1122"
+  - domain: vault.{{ domain_name }}
+    upstream: "http://127.0.0.1:8080"
   - domain: wonihongo.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:9100"
