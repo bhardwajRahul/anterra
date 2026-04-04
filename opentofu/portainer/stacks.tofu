@@ -69,24 +69,6 @@ resource "portainer_stack" "tailscale_airvpn" {
   })
 }
 
-# Karakeep stack - self-hosted bookmark manager with AI tagging
-resource "portainer_stack" "karakeep" {
-  name            = "karakeep"
-  deployment_type = "standalone"
-  method          = "string"
-  endpoint_id     = var.docker_pve2_portainer_endpoint_id
-  stack_file_content = templatefile("${path.module}/compose-files/karakeep.yaml.tpl", {
-    docker_user_puid       = data.bitwarden_secret.docker_user_puid.value
-    docker_user_pgid       = data.bitwarden_secret.docker_user_pgid.value
-    docker_timezone        = var.docker_timezone
-    docker_data_path       = var.docker_data_path
-    karakeep_version       = var.karakeep_version
-    nextauth_secret        = data.bitwarden_secret.karakeep_nextauth_secret.value
-    nextauth_url           = data.bitwarden_secret.karakeep_nextauth_url.value
-    meilisearch_master_key = data.bitwarden_secret.karakeep_meilisearch_key.value
-    openai_api_key         = data.bitwarden_secret.karakeep_openai_api_key.value
-  })
-}
 
 # Immich stack - self-hosted photo and video management solution
 resource "portainer_stack" "immich" {

@@ -1,96 +1,79 @@
 # Karakeep
 
-Karakeep is a self-hosted bookmark manager with AI-powered automatic tagging and full-text search capabilities. It uses OpenAI for intelligent categorization and Meilisearch for fast search.
+Karakeep is a self-hosted bookmark manager running on the GreenCloud VPS via Docker, managed by Ansible playbooks. This is a minimal installation without Chrome (crawling), Meilisearch (search), or AI tagging.
 
 ## Deployment Details
 
-- **URL**: https://keep.example.com
-- **Stack Location**: `opentofu/portainer/compose-files/karakeep.yaml.tpl`
-- **Deployment Endpoint**: docker_pve2
+- **URL**: https://keep.ketwork.in
+- **Compose Location**: `ansible/playbooks/vps/templates/karakeep-compose.yaml.j2`
+- **Deployment Host**: vps (GreenCloud VPS)
 - **DNS Management**: Cloudflare (proxied)
-- **Reverse Proxy**: VPS Caddy instance via Tailscale
-- **Container Port**: 3000
+- **Reverse Proxy**: VPS Caddy instance (localhost:9721)
+- **Container Port**: 9721 (maps to 3000 inside container)
 
 ## Stack Components
 
 | Container | Image | Purpose |
 |-----------|-------|---------|
-| web | ghcr.io/karakeep-app/karakeep | Main application |
-| chrome | gcr.io/zenika-hub/alpine-chrome | Headless Chrome for web scraping |
-| meilisearch | getmeili/meilisearch | Full-text search engine |
+| karakeep | ghcr.io/karakeep-app/karakeep:release | Bookmark manager (minimal) |
 
 ## Required Bitwarden Secrets
 
-| Secret Variable | Description |
-|-----------------|-------------|
-| `karakeep_nextauth_url_secret_id` | Application URL (https://keep.example.com) |
-| `karakeep_nextauth_secret_id` | NextAuth session encryption key |
-| `karakeep_meilisearch_key_secret_id` | Meilisearch master key |
-| `karakeep_openai_api_key_secret_id` | OpenAI API key for AI tagging (optional) |
+| Secret Variable | UUID | Description |
+|-----------------|------|-------------|
+| `karakeep_nextauth_secret_uuid` | `33da07f9-acf3-435c-b126-b39a00da782d` | NextAuth session encryption key |
 
-**Generating Keys**:
-```bash
-# NextAuth secret
-openssl rand -base64 36
-
-# Meilisearch master key
-openssl rand -base64 36
-```
+The `NEXTAUTH_URL` is hardcoded in the compose template as `https://keep.ketwork.in`.
 
 ## Initial Setup
 
-1. Generate and store secrets in Bitwarden
-2. Configure secret UUIDs in `opentofu/portainer/tofu.auto.tfvars`
-3. Deploy the stack:
+1. Generate a NextAuth secret: `openssl rand -hex 32`
+2. Store the secret in Bitwarden Secrets Manager (or update the existing entry)
+3. Add the UUID to `ansible/inventory/group_vars/all/secrets.yaml` (vault-encrypted)
+4. Run the setup playbook:
    ```bash
-   cd opentofu/portainer
-   tofu apply
+   cd ansible
+   ansible-playbook -i inventory/hosts.yaml playbooks/vps/setup_karakeep.yaml
    ```
-4. Visit https://keep.example.com and create your admin account
-5. After creating your account, signups are automatically disabled
+5. Deploy Caddy reverse proxy config:
+   ```bash
+   ansible-playbook -i inventory/hosts.yaml playbooks/caddy/caddy_reverse_proxy.yaml
+   ```
+6. Create an account at https://keep.ketwork.in (signups are disabled after first run)
+7. Restore bookmarks from backup
 
-## AI Configuration
+## Updating
 
-The stack is configured with OpenAI integration for automatic tagging:
+Run the update playbook to pull the latest image and recreate the container:
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `INFERENCE_TEXT_MODEL` | gpt-4o-mini | Model for text analysis |
-| `INFERENCE_IMAGE_MODEL` | gpt-4o-mini | Model for image analysis |
+```bash
+cd ansible
+ansible-playbook -i inventory/hosts.yaml playbooks/vps/update_karakeep.yaml
+```
 
-**Alternative Models**:
-- Any OpenAI model: gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo
-- For local AI: Replace `OPENAI_API_KEY` with `OLLAMA_BASE_URL` pointing to your Ollama instance
+The playbook is idempotent -- running it when already up to date produces no changes.
 
-## Volume Mounts
+## Data and Backups
 
-| Container Path | Host Path | Purpose |
-|----------------|-----------|---------|
-| `/data` | `${docker_data_path}/karakeep` | Application data |
-| `/meili_data` | `${docker_data_path}/karakeep-meilisearch` | Search index |
+Data is stored at `/opt/karakeep/data/` on the VPS, including the SQLite database and any uploaded assets.
 
-## Security Configuration
+## Disabled Features
 
-The stack includes security measures:
-- `DISABLE_SIGNUPS=true`: Prevents unauthorized account creation
-- Only remove temporarily if creating additional accounts, then re-enable
+This minimal installation does not include:
+- **Search** (no Meilisearch) -- full-text search is unavailable
+- **Crawling/Screenshots** (no Chrome) -- website previews and JavaScript rendering are unavailable
+- **AI Tagging** (no OpenAI/Ollama) -- automatic tagging is unavailable
 
-To temporarily enable signups:
-1. Remove `DISABLE_SIGNUPS` from compose template
-2. Run `tofu apply`
-3. Create accounts
-4. Restore `DISABLE_SIGNUPS=true`
-5. Run `tofu apply` again
+To enable any of these features, add the relevant containers and environment variables per the [Karakeep documentation](https://docs.karakeep.app/configuration/environment-variables/).
 
 ## Important Notes
 
-- Chrome container is required for web page scraping and preview generation
-- Meilisearch provides fast, typo-tolerant search
-- OpenAI API key is optional but recommended for AI features
-- All data is stored locally; no external sync
+- Signups are disabled by default (`DISABLE_SIGNUPS=true`). To add users, temporarily remove the variable, redeploy, create accounts, then restore it.
+- The container binds to 127.0.0.1:9721 only -- external access goes through Caddy with TLS.
+- Docker was already installed on the VPS for previous services.
 
 ## References
 
+- [Karakeep Documentation](https://docs.karakeep.app/)
 - [Karakeep GitHub](https://github.com/karakeep-app/karakeep)
-- [Meilisearch Documentation](https://www.meilisearch.com/docs)
-- [OpenAI API](https://platform.openai.com/docs)
+- [Minimal Install Guide](https://docs.karakeep.app/installation/minimal-install)

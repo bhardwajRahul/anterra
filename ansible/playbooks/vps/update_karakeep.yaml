@@ -1,39 +1,39 @@
 ---
-- name: Update Vaultwarden on VPS
+- name: Update Karakeep on VPS
   hosts: vps
   become: true
   gather_facts: false
 
   vars:
-    vaultwarden_dir: /opt/vaultwarden
+    karakeep_dir: /opt/karakeep
 
   tasks:
-    - name: Pull latest Vaultwarden image
+    - name: Pull latest Karakeep image
       command: docker compose pull
       args:
-        chdir: "{{ vaultwarden_dir }}"
+        chdir: "{{ karakeep_dir }}"
       changed_when: false
 
     - name: Recreate container if image changed
       command: docker compose up -d
       args:
-        chdir: "{{ vaultwarden_dir }}"
+        chdir: "{{ karakeep_dir }}"
       register: up_result
       changed_when: up_result.stderr is search('Started') or up_result.stderr is search('Created')
 
-    - name: Wait for Vaultwarden to be ready
+    - name: Wait for Karakeep to be ready
       uri:
-        url: "http://127.0.0.1:8080"
+        url: "http://127.0.0.1:9721"
         status_code: 200
       register: health_check
       retries: 10
       delay: 3
       until: health_check.status == 200
 
-    - name: Verify Vaultwarden container is running
+    - name: Verify Karakeep container is running
       command: docker compose ps --format json
       args:
-        chdir: "{{ vaultwarden_dir }}"
+        chdir: "{{ karakeep_dir }}"
       register: compose_ps
       changed_when: false
 

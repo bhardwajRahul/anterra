@@ -34,11 +34,6 @@ ts_wireguard_private_key_secret_id   = "789cf967-4187-4858-86f2-b3d700105a23"
 ts_wireguard_preshared_key_secret_id = "38a591b6-677d-4ebd-b698-b3d700109cd9"
 ts_wireguard_addresses_secret_id     = "4391e20d-8ef6-41ed-8148-b3d70010d095"
 
-# Bitwarden secret IDs for karakeep
-karakeep_nextauth_url_secret_id    = "a648d8c6-60d7-4690-a116-b39a00dc5d27"
-karakeep_nextauth_secret_id        = "33da07f9-acf3-435c-b126-b39a00da782d"
-karakeep_meilisearch_key_secret_id = "baa723ce-256a-4422-9ea2-b39a00daac32"
-karakeep_openai_api_key_secret_id  = "a6c19765-5f3a-4fe6-ab83-b39a00e2e32f"
 
 # Bitwarden secret UUID for Tailscale auth key
 tailscale_auth_key_uuid = "201cdbb6-177f-4188-9a26-b39f002fc4a3"

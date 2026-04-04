@@ -1,0 +1,14 @@
+services:
+  karakeep:
+    image: ghcr.io/karakeep-app/karakeep:release
+    container_name: karakeep
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:9721:3000"
+    environment:
+      DATA_DIR: /data
+      NEXTAUTH_SECRET: "{{ karakeep_nextauth_secret }}"
+      NEXTAUTH_URL: "https://keep.ketwork.in"
+      DISABLE_SIGNUPS: "true"
