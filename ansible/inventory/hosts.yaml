@@ -11,3 +11,7 @@ all:
         mediacenter:
         docker_pve:
         docker_pve2:
+    proxmox_hosts:
+      hosts:
+        pve:
+        pve2:

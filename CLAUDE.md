@@ -54,6 +54,7 @@ cd opentofu/portainer && tofu init && tofu plan && tofu apply
 
 ## Gotchas
 
+- **pve Intel NIC (e1000e)**: The Intel I219 NIC on pve suffers from "Detected Hardware Unit Hang" under sustained load (e.g. Plex streaming). Fix applied via `playbooks/proxmox/server/pve_fix_intel_nic_issue.yaml` -- disables TSO/GSO/GRO, increases ring buffers to 4096, disables EEE advertisement. A systemd service persists the settings across reboots. pve2 uses a Realtek NIC and is not affected.
 - **Cloudflare proxy**: Media services (Plex, Jellyfin, Immich) MUST use DNS-only (`proxied = false`). Cloudflare ToS prohibits video/media through free CDN.
 - **SMB mounts**: Setup playbooks create systemd mount units. Docker/Plex won't start without successful mounts.
 - **Automation first**: Fix issues through playbooks/OpenTofu, not manual changes. Rerun automation before debugging.

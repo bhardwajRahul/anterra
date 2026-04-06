@@ -1,0 +1,109 @@
+---
+# Fix for Intel I219 (e1000e) "Detected Hardware Unit Hang" under sustained load.
+# Applies ethtool settings and creates a systemd service to persist them across reboots.
+#
+# Run: ansible-playbook -i inventory/hosts.yaml playbooks/proxmox/server/pve_fix_intel_nic_issue.yaml
+
+- name: Fetch Bitwarden Secrets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Fetch PVE SSH password from Bitwarden
+      shell: bws secret get {{ pve_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
+      register: pve_ssh_password_result
+      changed_when: false
+      no_log: true
+
+    - name: Set PVE SSH password fact
+      set_fact:
+        pve_ssh_pass: "{{ (pve_ssh_password_result.stdout | from_json).value }}"
+      no_log: true
+
+    - name: Add credentials to PVE host
+      add_host:
+        name: pve
+        ansible_ssh_pass: "{{ pve_ssh_pass }}"
+        ansible_become_pass: "{{ pve_ssh_pass }}"
+      no_log: true
+
+- name: Fix e1000e NIC Hardware Unit Hang
+  hosts: pve
+  become: true
+  gather_facts: false
+
+  vars:
+    nic_interface: eno1
+    ring_buffer_size: 4096
+
+  tasks:
+    - name: Gather facts
+      setup:
+
+    - name: Verify e1000e driver is in use
+      shell: ethtool -i {{ nic_interface }} | grep "driver:" | awk '{print $2}'
+      register: nic_driver
+      changed_when: false
+      failed_when: nic_driver.stdout != "e1000e"
+
+    - name: Increase ring buffer sizes
+      command: ethtool -G {{ nic_interface }} rx {{ ring_buffer_size }} tx {{ ring_buffer_size }}
+      register: ring_result
+      changed_when: ring_result.rc == 0
+
+    - name: Disable TCP/Generic Segmentation and Receive Offload
+      command: ethtool -K {{ nic_interface }} tso off gso off gro off
+      register: offload_result
+      changed_when: offload_result.rc == 0
+
+    - name: Disable EEE advertisement
+      command: ethtool --set-eee {{ nic_interface }} advertise 0
+      register: eee_result
+      changed_when: eee_result.rc == 0
+
+    - name: Create systemd service to persist NIC settings across reboots
+      copy:
+        dest: /etc/systemd/system/fix-e1000e-nic.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Apply e1000e NIC fixes for Hardware Unit Hang
+          After=network-pre.target
+          Before=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/sbin/ethtool -G {{ nic_interface }} rx {{ ring_buffer_size }} tx {{ ring_buffer_size }}
+          ExecStart=/sbin/ethtool -K {{ nic_interface }} tso off gso off gro off
+          ExecStart=/sbin/ethtool --set-eee {{ nic_interface }} advertise 0
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+      register: systemd_service
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
+      when: systemd_service.changed
+
+    - name: Enable NIC fix service
+      systemd:
+        name: fix-e1000e-nic
+        enabled: true
+
+    - name: Verify settings applied
+      shell: |
+        echo "=== Ring Buffers ==="
+        ethtool -g {{ nic_interface }} | grep -A4 "Current hardware"
+        echo "=== Offload ==="
+        ethtool -k {{ nic_interface }} | grep -E "tcp-segmentation-offload|generic-segmentation-offload|generic-receive-offload"
+        echo "=== EEE ==="
+        ethtool --show-eee {{ nic_interface }}
+      register: verify_output
+      changed_when: false
+
+    - name: Display verification
+      debug:
+        msg: "{{ verify_output.stdout }}"
