@@ -297,3 +297,10 @@ variable "whoa_nihongo_secret_key_secret_id" {
   type        = string
   sensitive   = true
 }
+
+# Meilisearch master key (Bitwarden secret ID)
+variable "meili_master_key_secret_id" {
+  description = "The Bitwarden secret ID for Meilisearch master key"
+  type        = string
+  sensitive   = true
+}

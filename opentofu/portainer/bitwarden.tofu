@@ -146,3 +146,8 @@ data "bitwarden_secret" "reactive_resume_app_url" {
 data "bitwarden_secret" "whoa_nihongo_secret_key" {
   id = var.whoa_nihongo_secret_key_secret_id
 }
+
+# Fetch Meilisearch master key from Bitwarden Secrets Manager
+data "bitwarden_secret" "meili_master_key" {
+  id = var.meili_master_key_secret_id
+}

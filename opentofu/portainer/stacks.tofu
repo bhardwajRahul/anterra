@@ -177,3 +177,15 @@ resource "portainer_stack" "reactive_resume" {
   })
 }
 
+# Meilisearch stack - full-text search engine for Karakeep
+resource "portainer_stack" "meilisearch" {
+  name            = "meilisearch"
+  deployment_type = "standalone"
+  method          = "string"
+  endpoint_id     = var.docker_pve2_portainer_endpoint_id
+  stack_file_content = templatefile("${path.module}/compose-files/meilisearch.yaml.tpl", {
+    docker_data_path = var.docker_data_path
+    meili_master_key = data.bitwarden_secret.meili_master_key.value
+  })
+}
+

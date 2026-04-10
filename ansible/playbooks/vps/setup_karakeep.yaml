@@ -11,10 +11,17 @@
       no_log: true
       changed_when: false
 
+    - name: Fetch Karakeep Meilisearch master key from Bitwarden
+      shell: bws secret get "{{ karakeep_meili_master_key_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: meili_key_result
+      no_log: true
+      changed_when: false
+
     - name: Pass secrets to VPS host
       add_host:
         name: vps
         karakeep_nextauth_secret: "{{ (nextauth_secret_result.stdout | from_json).value }}"
+        karakeep_meili_master_key: "{{ (meili_key_result.stdout | from_json).value }}"
       no_log: true
 
 - name: Setup Karakeep on VPS

@@ -57,6 +57,8 @@ external_reverse_proxy_records:
     upstream: "http://{{ mediacenter_ip }}:8096"
   - domain: keep.{{ domain_name }}
     upstream: "http://127.0.0.1:9721"
+  - domain: meilisearch.{{ domain_name }}
+    upstream: "http://{{ docker_pve2_ip }}:7700"
   - domain: plex.{{ domain_name }}
     upstream: "{{ plex_ip }}:32400"
   - domain: seerr.{{ domain_name }}

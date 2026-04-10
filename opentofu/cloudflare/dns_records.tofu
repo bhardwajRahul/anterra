@@ -87,6 +87,10 @@ locals {
       content = local.vps_reverse_proxy_ip
       proxied = true
     }
+    "meilisearch" = {
+      content = local.vps_reverse_proxy_ip
+      proxied = true
+    }
     "plex" = {
       content = local.vps_reverse_proxy_ip
       # DNS-only mode (proxied = false) to comply with Cloudflare ToS

@@ -1,6 +1,6 @@
 # Karakeep
 
-Karakeep is a self-hosted bookmark manager running on the GreenCloud VPS via Docker, managed by Ansible playbooks. This is a minimal installation without Chrome (crawling), Meilisearch (search), or AI tagging.
+Karakeep is a self-hosted bookmark manager running on the GreenCloud VPS via Docker, managed by Ansible playbooks. Meilisearch runs on the homelab (docker_pve2 via Portainer) and is accessed over the public URL `meilisearch.ketwork.in`. Chrome (crawling) and AI tagging are not enabled.
 
 ## Deployment Details
 
@@ -13,15 +13,17 @@ Karakeep is a self-hosted bookmark manager running on the GreenCloud VPS via Doc
 
 ## Stack Components
 
-| Container | Image | Purpose |
-|-----------|-------|---------|
-| karakeep | ghcr.io/karakeep-app/karakeep:release | Bookmark manager (minimal) |
+| Container | Image | Host | Purpose |
+|-----------|-------|------|---------|
+| karakeep | ghcr.io/karakeep-app/karakeep:release | VPS | Bookmark manager |
+| meilisearch | getmeili/meilisearch:latest | docker_pve2 (Portainer) | Full-text search engine |
 
 ## Required Bitwarden Secrets
 
 | Secret Variable | UUID | Description |
 |-----------------|------|-------------|
 | `karakeep_nextauth_secret_uuid` | `33da07f9-acf3-435c-b126-b39a00da782d` | NextAuth session encryption key |
+| `karakeep_meili_master_key_uuid` | `bf431938-c35c-4f45-afe8-b4280093c764` | Meilisearch master key (shared with Portainer stack) |
 
 The `NEXTAUTH_URL` is hardcoded in the compose template as `https://keep.ketwork.in`.
 
@@ -57,10 +59,17 @@ The playbook is idempotent -- running it when already up to date produces no cha
 
 Data is stored at `/opt/karakeep/data/` on the VPS, including the SQLite database and any uploaded assets.
 
+## Search (Meilisearch)
+
+Meilisearch runs on the homelab (docker_pve2) and is exposed at `https://meilisearch.ketwork.in` via VPS Caddy reverse proxy over Tailscale, with Cloudflare proxy enabled. The Karakeep container connects to it using `MEILI_ADDR` and `MEILI_MASTER_KEY`.
+
+When the homelab is down, Karakeep continues to function for bookmarking but full-text search is unavailable. Indexing resumes when Meilisearch becomes reachable again.
+
+The Meilisearch stack is managed via Portainer OpenTofu (`opentofu/portainer/stacks.tofu`). The same master key is used in both the Portainer stack and the Karakeep Ansible deployment.
+
 ## Disabled Features
 
-This minimal installation does not include:
-- **Search** (no Meilisearch) -- full-text search is unavailable
+This installation does not include:
 - **Crawling/Screenshots** (no Chrome) -- website previews and JavaScript rendering are unavailable
 - **AI Tagging** (no OpenAI/Ollama) -- automatic tagging is unavailable
 

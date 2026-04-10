@@ -75,3 +75,6 @@ reactive_resume_app_url_secret_id     = "8b53d97e-3cfd-4933-83a2-b3df00bd5a19"
 
 # Whoa Nihongo configuration
 whoa_nihongo_secret_key_secret_id = "38779934-50a7-4c10-ae5a-b3fe0054254f"
+
+# Meilisearch configuration
+meili_master_key_secret_id = "bf431938-c35c-4f45-afe8-b4280093c764"
