@@ -1,0 +1,132 @@
+---
+# Fix for Realtek RTL8168h/8111h NIC link instability caused by PCIe ASPM L1.
+# Disables ASPM via kernel parameter and direct PCIe register write, with a
+# systemd oneshot service to persist the register fix across reboots.
+#
+# Run: ansible-playbook -i inventory/hosts.yaml playbooks/proxmox/server/pve2_fix_realtek_nic_aspm.yaml
+
+- name: Fetch Bitwarden Secrets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Fetch PVE2 SSH password from Bitwarden
+      shell: bws secret get {{ pve2_ssh_password_uuid }} --access-token "{{ bws_access_token }}" --output json
+      register: pve2_ssh_password_result
+      changed_when: false
+      no_log: true
+
+    - name: Set PVE2 SSH password fact
+      set_fact:
+        pve2_ssh_pass: "{{ (pve2_ssh_password_result.stdout | from_json).value }}"
+      no_log: true
+
+    - name: Add credentials to PVE2 host
+      add_host:
+        name: pve2
+        ansible_ssh_pass: "{{ pve2_ssh_pass }}"
+        ansible_become_pass: "{{ pve2_ssh_pass }}"
+      no_log: true
+
+- name: Fix Realtek RTL8168h ASPM Link Instability
+  hosts: pve2
+  become: true
+  gather_facts: false
+
+  vars:
+    nic_pcie_address: "01:00.0"
+    nic_lnkctl_register: "0x80.w"
+    nic_lnkctl_value: "0140"
+    nic_interface: enp1s0
+
+  handlers:
+    - name: Update GRUB
+      command: update-grub
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: true
+
+  tasks:
+    # --- GRUB ---
+    - name: Add pcie_aspm=off to GRUB kernel command line
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet pcie_aspm=off"'
+        backup: true
+      notify: Update GRUB
+      tags: grub
+
+    # --- Systemd service ---
+    - name: Deploy ASPM disable systemd service
+      copy:
+        dest: /etc/systemd/system/disable-aspm-nic.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Disable PCIe ASPM on Realtek NIC to prevent link drops
+          After=systemd-modules-load.service
+          Before=network-pre.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/setpci -s {{ nic_pcie_address }} {{ nic_lnkctl_register }}={{ nic_lnkctl_value }}
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Reload systemd
+      tags: service
+
+    - name: Flush handlers
+      meta: flush_handlers
+      tags: service
+
+    - name: Enable and start ASPM disable service
+      systemd:
+        name: disable-aspm-nic
+        enabled: true
+        state: started
+      tags: service
+
+    # --- Verification ---
+    - name: Verify ASPM disabled at hardware level
+      shell: setpci -s {{ nic_pcie_address }} {{ nic_lnkctl_register }}
+      register: aspm_register
+      changed_when: false
+      failed_when: aspm_register.stdout != nic_lnkctl_value
+      tags: verify
+
+    - name: Verify no ASPM states enabled in lspci
+      shell: lspci -vvv -s {{ nic_pcie_address }} | grep "ASPM.*Enabled" || true
+      register: aspm_lspci
+      changed_when: false
+      failed_when: aspm_lspci.stdout | length > 0
+      tags: verify
+
+    - name: Verify NIC link health
+      shell: ethtool {{ nic_interface }}
+      register: nic_status
+      changed_when: false
+      failed_when: >
+        'Speed: 1000Mb/s' not in nic_status.stdout or
+        'Duplex: Full' not in nic_status.stdout or
+        'Link detected: yes' not in nic_status.stdout
+      tags: verify
+
+    - name: Verify GRUB config contains pcie_aspm=off
+      shell: grep GRUB_CMDLINE_LINUX_DEFAULT /etc/default/grub
+      register: grub_check
+      changed_when: false
+      failed_when: "'pcie_aspm=off' not in grub_check.stdout"
+      tags: verify
+
+    - name: Display verification results
+      debug:
+        msg: |
+          ASPM register (expected {{ nic_lnkctl_value }}): {{ aspm_register.stdout }}
+          NIC link: {{ nic_status.stdout_lines | select('search', 'Speed|Duplex|Link detected') | list | join(', ') }}
+          GRUB: {{ grub_check.stdout }}
+      tags: verify
