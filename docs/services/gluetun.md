@@ -2,7 +2,40 @@
 
 Gluetun is a VPN container that provides a secure tunnel for multiple services. All containers in this stack route their traffic through the Gluetun VPN connection using `network_mode: "service:gluetun"`.
 
-## Deployment Details
+There are two separate Gluetun deployments:
+
+- **docker_pve2**: Main stack with qBittorrent, Sonarr, Radarr, etc. (managed via OpenTofu/Portainer)
+- **ph16-71 (laptop)**: Lightweight stack with Firefox only (managed via Ansible)
+
+## ph16-71 Deployment (Firefox)
+
+- **Stack Location**: `ansible/playbooks/common/gluetun-firefox.yaml.j2`
+- **Deployment Playbook**: `ansible/playbooks/common/setup_ph16-71.yaml`
+- **URL**: `https://firefox.ketwork.in`
+- **VPN Provider**: AirVPN (WireGuard protocol)
+
+### Required Bitwarden Secrets (ph16-71)
+
+| Secret Variable | Description |
+|-----------------|-------------|
+| `ph16_71_ssh_password_uuid` | SSH and sudo password for ph16-71 |
+| `ph16_71_wireguard_private_key_uuid` | WireGuard private key |
+| `ph16_71_wireguard_preshared_key_uuid` | WireGuard preshared key |
+| `ph16_71_wireguard_addresses_uuid` | WireGuard interface address (e.g., 10.x.x.x/32) |
+| `ph16_71_vpn_input_port_uuid` | AirVPN forwarded port |
+
+### ph16-71 Initial Setup
+
+```bash
+cd ansible
+ansible-playbook -i inventory/hosts.yaml playbooks/common/setup_ph16-71.yaml
+```
+
+Then apply Caddy and Cloudflare changes to expose the service.
+
+---
+
+## docker_pve2 Deployment Details
 
 - **Stack Location**: `opentofu/portainer/compose-files/gluetun.yaml.tpl`
 - **Deployment Endpoint**: docker_pve2

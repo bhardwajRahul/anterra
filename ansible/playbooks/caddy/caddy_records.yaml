@@ -9,6 +9,8 @@ internal_reverse_proxy_records:
     upstream: "http://{{ docker_pve2_ip }}:3080"
   - domain: browserless.{{ domain_name }}
     upstream: "http://{{ docker_pve_ip }}:3000"
+  - domain: firefox.{{ domain_name }}
+    upstream: "http://{{ ph16_71_tailscale_ip }}:3080"
   - domain: flaresolverr.{{ domain_name }}
     upstream: "http://{{ docker_pve2_ip }}:8191"
   - domain: n8n.{{ domain_name }}

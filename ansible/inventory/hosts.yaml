@@ -15,3 +15,6 @@ all:
       hosts:
         pve:
         pve2:
+    laptop:
+      hosts:
+        ph16-71:

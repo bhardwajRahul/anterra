@@ -21,6 +21,9 @@ locals {
     "browserless" = {
       content = local.homelab_reverse_proxy_ip
     }
+    "firefox" = {
+      content = local.homelab_reverse_proxy_ip
+    }
     "flaresolverr" = {
       content = local.homelab_reverse_proxy_ip
     }

@@ -1,0 +1,5 @@
+---
+#if this host stops working, check that it is still running cachyos and that the IP address is correct
+ansible_host: "{{ ph16_71_tailscale_ip }}"
+ansible_user: prodigal4176
+...
