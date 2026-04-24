@@ -142,14 +142,14 @@
           User {{ docker_user }} added to docker group.
           Note: log out and back in for group membership to take effect.
 
-- name: Deploy Gluetun + Firefox stack on ph16-71
+- name: Deploy Gluetun + Helium stack on ph16-71
   hosts: ph16-71
   become: true
   gather_facts: true
 
   vars:
     docker_timezone: Asia/Tokyo
-    compose_dir: /home/prodigal4176/docker/compose/gluetun-firefox
+    compose_dir: /home/prodigal4176/docker/compose/gluetun-helium
 
   tasks:
     - name: Create gluetun config directory
@@ -160,9 +160,9 @@
         group: prodigal4176
         mode: '0755'
 
-    - name: Create firefox config directory
+    - name: Create helium config directory
       file:
-        path: /home/prodigal4176/docker/config/firefox
+        path: /home/prodigal4176/docker/config/helium
         state: directory
         owner: prodigal4176
         group: prodigal4176
@@ -176,17 +176,52 @@
         group: prodigal4176
         mode: '0755'
 
+    - name: Detect Intel GPU render node
+      shell: |
+        set -e
+        for node in /dev/dri/renderD*; do
+          vendor_file="/sys/class/drm/$(basename "$node")/device/vendor"
+          if [ -f "$vendor_file" ] && [ "$(cat "$vendor_file")" = "0x8086" ]; then
+            echo "$node"
+            exit 0
+          fi
+        done
+        exit 1
+      register: intel_render_node_result
+      changed_when: false
+
+    - name: Resolve render group GID
+      command: getent group render
+      register: render_group
+      changed_when: false
+
+    - name: Resolve video group GID
+      command: getent group video
+      register: video_group
+      changed_when: false
+
+    - name: Set GPU facts for template
+      set_fact:
+        intel_render_node: "{{ intel_render_node_result.stdout }}"
+        render_gid: "{{ render_group.stdout.split(':')[2] }}"
+        video_gid: "{{ video_group.stdout.split(':')[2] }}"
+
     - name: Template compose file to host
       template:
-        src: gluetun-firefox.yaml.j2
+        src: gluetun-helium.yaml.j2
         dest: "{{ compose_dir }}/docker-compose.yaml"
         owner: prodigal4176
         group: prodigal4176
         mode: '0600'
       no_log: true
 
-    - name: Bring up gluetun + firefox stack
+    - name: Bring up gluetun + helium stack
       command: docker compose up -d
       args:
         chdir: "{{ compose_dir }}"
       changed_when: true
+
+    - name: Prune orphaned docker images
+      command: docker image prune -af
+      register: image_prune
+      changed_when: "'Total reclaimed space: 0B' not in image_prune.stdout"

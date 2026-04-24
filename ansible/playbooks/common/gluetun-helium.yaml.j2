@@ -16,6 +16,7 @@ services:
       - WIREGUARD_PRESHARED_KEY={{ wireguard_preshared_key }}
       - WIREGUARD_ADDRESSES={{ wireguard_addresses }}
       - SERVER_COUNTRIES=Japan,Singapore
+      - FIREWALL=on
       - FIREWALL_VPN_INPUT_PORTS={{ vpn_input_port }}
       - DOT_BLOCK_MALICIOUS=on
       - DOT_BLOCK_ADS=on
@@ -24,18 +25,29 @@ services:
       - "3080:3000/tcp"
     restart: always
 
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
+  helium:
+    image: lscr.io/linuxserver/helium:latest
+    container_name: helium
     network_mode: "service:gluetun"
     depends_on: [gluetun]
     security_opt:
       - seccomp:unconfined
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "{{ render_gid }}"
+      - "{{ video_gid }}"
     environment:
       - PUID={{ ansible_user_uid }}
       - PGID={{ ansible_user_gid }}
       - TZ={{ docker_timezone }}
+      - DRINODE={{ intel_render_node }}
+      - DRI_NODE={{ intel_render_node }}
+      - SELKIES_ENCODER=vah264enc
+      - SELKIES_FRAMERATE=60
+      - SELKIES_H264_CRF=23
+      - HELIUM_CLI=--enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --enable-features=VaapiVideoDecoder,VaapiVideoEncoder
     volumes:
-      - /home/prodigal4176/docker/config/firefox:/config
-    shm_size: "2gb"
+      - /home/prodigal4176/docker/config/helium:/config
+    shm_size: "5gb"
     restart: always
