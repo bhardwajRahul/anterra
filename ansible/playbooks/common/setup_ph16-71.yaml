@@ -1,0 +1,205 @@
+---
+- name: Fetch Bitwarden Secrets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Fetch ph16-71 SSH password from Bitwarden
+      shell: bws secret get "{{ ph16_71_ssh_password_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: ph16_71_ssh_password_result
+      no_log: true
+      changed_when: false
+      when: ph16_71_ssh_password_uuid is defined
+
+    - name: Fetch ph16-71 WireGuard private key from Bitwarden
+      shell: bws secret get "{{ ph16_71_wireguard_private_key_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: ph16_71_wireguard_private_key_result
+      no_log: true
+      changed_when: false
+      when: ph16_71_wireguard_private_key_uuid is defined
+
+    - name: Fetch ph16-71 WireGuard preshared key from Bitwarden
+      shell: bws secret get "{{ ph16_71_wireguard_preshared_key_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: ph16_71_wireguard_preshared_key_result
+      no_log: true
+      changed_when: false
+      when: ph16_71_wireguard_preshared_key_uuid is defined
+
+    - name: Fetch ph16-71 WireGuard addresses from Bitwarden
+      shell: bws secret get "{{ ph16_71_wireguard_addresses_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: ph16_71_wireguard_addresses_result
+      no_log: true
+      changed_when: false
+      when: ph16_71_wireguard_addresses_uuid is defined
+
+    - name: Fetch ph16-71 VPN input port from Bitwarden
+      shell: bws secret get "{{ ph16_71_vpn_input_port_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: ph16_71_vpn_input_port_result
+      no_log: true
+      changed_when: false
+      when: ph16_71_vpn_input_port_uuid is defined
+
+    - name: Fetch ph16-71 outbound subnet from Bitwarden
+      shell: bws secret get "{{ ph16_71_outbound_subnet_uuid }}" --access-token "{{ bws_access_token }}" --output json
+      register: ph16_71_outbound_subnet_result
+      no_log: true
+      changed_when: false
+      when: ph16_71_outbound_subnet_uuid is defined
+
+    - name: Set ph16-71 SSH password fact
+      set_fact:
+        ph16_71_ssh_password: "{{ (ph16_71_ssh_password_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - ph16_71_ssh_password_uuid is defined
+        - ph16_71_ssh_password_result.stdout is defined
+
+    - name: Set ph16-71 WireGuard facts
+      set_fact:
+        ph16_71_wireguard_private_key: "{{ (ph16_71_wireguard_private_key_result.stdout | from_json).value }}"
+        ph16_71_wireguard_preshared_key: "{{ (ph16_71_wireguard_preshared_key_result.stdout | from_json).value }}"
+        ph16_71_wireguard_addresses: "{{ (ph16_71_wireguard_addresses_result.stdout | from_json).value }}"
+        ph16_71_vpn_input_port: "{{ (ph16_71_vpn_input_port_result.stdout | from_json).value }}"
+        ph16_71_outbound_subnet: "{{ (ph16_71_outbound_subnet_result.stdout | from_json).value }}"
+      no_log: true
+      when:
+        - ph16_71_wireguard_private_key_uuid is defined
+        - ph16_71_wireguard_preshared_key_uuid is defined
+        - ph16_71_wireguard_addresses_uuid is defined
+        - ph16_71_vpn_input_port_uuid is defined
+        - ph16_71_outbound_subnet_uuid is defined
+        - ph16_71_wireguard_private_key_result.stdout is defined
+        - ph16_71_wireguard_preshared_key_result.stdout is defined
+        - ph16_71_wireguard_addresses_result.stdout is defined
+        - ph16_71_vpn_input_port_result.stdout is defined
+        - ph16_71_outbound_subnet_result.stdout is defined
+
+    - name: Assert ph16-71 WireGuard facts are set
+      fail:
+        msg: |
+          One or more ph16-71 WireGuard UUIDs are not defined.
+          Required vault variables: ph16_71_wireguard_private_key_uuid,
+          ph16_71_wireguard_preshared_key_uuid, ph16_71_wireguard_addresses_uuid,
+          ph16_71_vpn_input_port_uuid, ph16_71_outbound_subnet_uuid
+      when: >
+        ph16_71_wireguard_private_key is not defined or
+        ph16_71_wireguard_preshared_key is not defined or
+        ph16_71_wireguard_addresses is not defined or
+        ph16_71_vpn_input_port is not defined or
+        ph16_71_outbound_subnet is not defined
+
+    - name: Add ph16-71 credentials and secrets to hostvars
+      add_host:
+        name: ph16-71
+        ansible_ssh_pass: "{{ ph16_71_ssh_password }}"
+        ansible_become_pass: "{{ ph16_71_ssh_password }}"
+        wireguard_private_key: "{{ ph16_71_wireguard_private_key }}"
+        wireguard_preshared_key: "{{ ph16_71_wireguard_preshared_key }}"
+        wireguard_addresses: "{{ ph16_71_wireguard_addresses }}"
+        vpn_input_port: "{{ ph16_71_vpn_input_port }}"
+        outbound_subnet: "{{ ph16_71_outbound_subnet }}"
+      no_log: true
+      when:
+        - ph16_71_ssh_password is defined
+        - ph16_71_wireguard_private_key is defined
+        - ph16_71_wireguard_preshared_key is defined
+        - ph16_71_wireguard_addresses is defined
+        - ph16_71_vpn_input_port is defined
+        - ph16_71_outbound_subnet is defined
+
+- name: Install Docker on ph16-71
+  hosts: ph16-71
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_user: prodigal4176
+
+  tasks:
+    - name: Update pacman cache
+      pacman:
+        update_cache: true
+
+    - name: Install Docker
+      pacman:
+        name:
+          - docker
+          - docker-compose
+        state: present
+
+    - name: Enable and start Docker service
+      systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Output setup summary
+      debug:
+        msg: |
+          Docker installation complete on ph16-71!
+
+          Docker Version: {{ docker_version.stdout }}
+
+          User {{ docker_user }} added to docker group.
+          Note: log out and back in for group membership to take effect.
+
+- name: Deploy Gluetun + Firefox stack on ph16-71
+  hosts: ph16-71
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_timezone: Asia/Tokyo
+    compose_dir: /home/prodigal4176/docker/compose/gluetun-firefox
+
+  tasks:
+    - name: Create gluetun config directory
+      file:
+        path: /home/prodigal4176/docker/config/gluetun
+        state: directory
+        owner: prodigal4176
+        group: prodigal4176
+        mode: '0755'
+
+    - name: Create firefox config directory
+      file:
+        path: /home/prodigal4176/docker/config/firefox
+        state: directory
+        owner: prodigal4176
+        group: prodigal4176
+        mode: '0755'
+
+    - name: Create compose directory
+      file:
+        path: "{{ compose_dir }}"
+        state: directory
+        owner: prodigal4176
+        group: prodigal4176
+        mode: '0755'
+
+    - name: Template compose file to host
+      template:
+        src: gluetun-firefox.yaml.j2
+        dest: "{{ compose_dir }}/docker-compose.yaml"
+        owner: prodigal4176
+        group: prodigal4176
+        mode: '0600'
+      no_log: true
+
+    - name: Bring up gluetun + firefox stack
+      command: docker compose up -d
+      args:
+        chdir: "{{ compose_dir }}"
+      changed_when: true

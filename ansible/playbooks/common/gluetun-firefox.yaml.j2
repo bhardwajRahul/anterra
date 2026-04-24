@@ -1,0 +1,42 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    hostname: gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - /home/prodigal4176/docker/config/gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=airvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY={{ wireguard_private_key }}
+      - WIREGUARD_PRESHARED_KEY={{ wireguard_preshared_key }}
+      - WIREGUARD_ADDRESSES={{ wireguard_addresses }}
+      - SERVER_COUNTRIES=Japan,Singapore
+      - FIREWALL_VPN_INPUT_PORTS={{ vpn_input_port }}
+      - FIREWALL_OUTBOUND_SUBNETS={{ outbound_subnet }}
+      - DOT_BLOCK_MALICIOUS=on
+      - DOT_BLOCK_ADS=on
+      - DOT_BLOCK_SURVEILLANCE=on
+    ports:
+      - "3080:3000/tcp"
+    restart: always
+
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    network_mode: "service:gluetun"
+    depends_on: [gluetun]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - PUID={{ ansible_user_uid }}
+      - PGID={{ ansible_user_gid }}
+      - TZ={{ docker_timezone }}
+    volumes:
+      - /home/prodigal4176/docker/config/firefox:/config
+    shm_size: "2gb"
+    restart: always
